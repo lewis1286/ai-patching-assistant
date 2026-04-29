@@ -64,14 +64,14 @@ Power: +12V 3000mA, -12V 1500mA, +5V 1500mA
 | Module | Manufacturer | HP | Case | Notes |
 |--------|--------------|----|----- |-------|
 | Quad VCA | Intellijel | 12 | Mantis | 4-channel linear/exponential VCA. Mix output (sums all channels). CV inputs with attenuators. Good for dynamics and mixing. |
-| Mega Milton | ALM Busy Circuits | 8 | Mantis | 4-channel mixer with individual level controls and stereo output. Unity gain summing. |
+| Mega Milton | ALM Busy Circuits | 8 | Mantis | 4-channel mixer with individual level controls and stereo output. Unity gain summing. Also includes a separate buffered mult section (1-in, multiple outs). |
 
 ## Utilities
 
 | Module | Manufacturer | HP | Case | Notes |
 |--------|--------------|----|----- |-------|
 | DATA (Silver) | Mordax | 16 | Mantis | Oscilloscope, spectrum analyzer, tuner, clock analyzer, voltmeter. 4 inputs. Essential diagnostic tool. Does not process audio — monitoring only. |
-| Buff Mult with Attenuators | Arcus Audio | 6 | Mantis | Buffered multiple with per-output attenuators. 1-in, 4-out. Ideal for distributing V/Oct pitch CV without voltage droop. |
+| Buff Mult with Attenuators | Arcus Audio | 6 | Mantis | Buffered multiple with per-output attenuators. 2-in, 6-out (3 outputs per input). Ideal for distributing V/Oct pitch CV without voltage droop. |
 | Listen IO | 4ms Company | 6 | Mantis | Eurorack I/O interface. Stereo in/out to 3.5mm. Headphone amp. Connects modular to external gear / monitors. |
 | Passive Multiple | 4ms Company | 2 | Mantis | 1-in, 3-out passive mult (×2 units). Use for gates, triggers, modulation CV (not pitch). |
 | Passive Multiple | 4ms Company | 2 | Mantis | 1-in, 3-out passive mult (×2 units). Use for gates, triggers, modulation CV (not pitch). |
