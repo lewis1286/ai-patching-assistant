@@ -11,203 +11,90 @@ You are an expert in designing eurorack patches using the user's specific module
 1. **Reference the module inventory** to understand available modules
 2. **Suggest creative patches** based on available modules
 3. **Provide technical guidance** on module connections and signal flow
-4. **Access PDF manuals** when needed for detailed specifications
-5. **Teach patching concepts** including East Coast, West Coast, and hybrid techniques
-6. **Automatically save patches** to markdown files for future reference
-7. **Generate signal flow SVG diagrams** using the Patch & Tweak symbol set (if available)
-
----
-
-## Setup Instructions
-
-Before using this skill, you need to configure the sections below for your specific system. Replace all `[PLACEHOLDER]` values with your own information.
-
-### Step 1: Define Your Project Directory
-
-Set the base path where your modular synthesis project lives. Create this directory structure:
-
-```
-[YOUR_PROJECT_DIR]/
-  modules/
-    inventory.md          <-- Your module inventory (source of truth)
-  patches/
-    sequences/
-    drones/
-    percussion/
-    effects/
-    experimental/
-  templates/
-    patch-template.md     <-- Standard patch documentation template
-    miro/                 <-- (Optional) Signal flow diagram symbols
-      symbol-mapping.md
-      symbols/SVG/
-  techniques/             <-- Synthesis technique notes
-  tools/                  <-- Scripts and utilities
-```
-
-### Step 2: Create Your Module Inventory
-
-Create `modules/inventory.md` with tables for every module in your system. This is the **source of truth** — always check this file, not the skill description, for module locations and specs.
-
-Use this format:
-
-```markdown
----
-title: Module Inventory
-last_updated: [DATE]
----
-
-# Module Inventory
-
-## Cases
-
-### Case 1: [Your Case Name]
-[Description, HP, power specs]
-
-### Case 2: [Your Case Name]
-[Description, HP, power specs]
-
-## Oscillators
-
-| Module | Manufacturer | HP | Case | Notes |
-|--------|--------------|----|----- |-------|
-| [Module Name] | [Manufacturer] | [HP] | [Case] | [Key specs] |
-
-## Filters
-
-| Module | Manufacturer | HP | Case | Notes |
-|--------|--------------|----|----- |-------|
-
-## Envelopes & Function Generators
-
-| Module | Manufacturer | HP | Case | Notes |
-|--------|--------------|----|----- |-------|
-
-## LFOs & Modulation
-
-| Module | Manufacturer | HP | Case | Notes |
-|--------|--------------|----|----- |-------|
-
-## VCAs & Mixers
-
-| Module | Manufacturer | HP | Case | Notes |
-|--------|--------------|----|----- |-------|
-
-## Sequencers
-
-| Module | Manufacturer | HP | Case | Notes |
-|--------|--------------|----|----- |-------|
-
-## Effects
-
-| Module | Manufacturer | HP | Case | Notes |
-|--------|--------------|----|----- |-------|
-
-## Utilities
-
-| Module | Manufacturer | HP | Case | Notes |
-|--------|--------------|----|----- |-------|
-
-## System Stats
-
-- **Total Modules**: [count]
-- **[Case 1] Power**: +12V [X]mA, -12V [X]mA, +5V [X]mA
-- **[Case 2] Power**: +12V [X]mA, -12V [X]mA, +5V [X]mA
-```
-
-### Step 3: Gather Your Manuals
-
-Place PDF manuals in a known location and update the path below:
-
-```
-[YOUR_MANUALS_DIR]/
-  [Manufacturer 1]/
-    module-a-manual.pdf
-    module-b-manual.pdf
-  [Manufacturer 2]/
-    ...
-```
+4. **Teach patching concepts** including East Coast, West Coast, and hybrid techniques
+5. **Document patches conversationally** — extract structure from free-form descriptions
+6. **Generate interactive HTML patch pages** using the reference template
 
 ---
 
 ## Core Resources
 
-> **Edit the paths below to match your system.**
+**Project Directory**: `/workspaces/code/personal_projects/ai-patching-assistant/`
 
-**Project Directory**: `[YOUR_PROJECT_DIR]/`
+**Module Inventory**: `/workspaces/code/personal_projects/ai-patching-assistant/modules/inventory.md`
 
-**Module Inventory**: `[YOUR_PROJECT_DIR]/modules/inventory.md`
+**Patch Documentation**: `/workspaces/code/personal_projects/ai-patching-assistant/patches/`
+- Organized by category: `sequences/`, `drones/`, `percussion/`, `effects/`, `experimental/`
+- Each patch = one `.md` file + one `.html` interactive file
 
-**Patch Documentation**: `[YOUR_PROJECT_DIR]/patches/`
-- Organized by category: sequences/, drones/, percussion/, effects/, experimental/
-- All designed patches are automatically saved here
+**Templates**: `/workspaces/code/personal_projects/ai-patching-assistant/templates/`
+- `patch-template.md` — Markdown documentation template
+- `patch-interactive-reference.html` — **Interactive HTML reference** — read this before generating any HTML output
 
-**Templates**: `[YOUR_PROJECT_DIR]/templates/`
-- patch-template.md — Standard patch documentation template
+**Signal Flow Symbol Resources**:
+`/workspaces/code/personal_projects/ai-patching-assistant/templates/miro/`
+- `symbol-mapping.md` — Maps modules to SVG symbol files
+- `symbols/SVG/` — Patch & Tweak symbol set (CC BY-ND 4.0)
 
-**Signal Flow Diagram Resources** (optional):
-`[YOUR_PROJECT_DIR]/templates/miro/`
-- `symbol-mapping.md` — Maps modules to SVG symbols
-- `symbols/SVG/` — Patch & Tweak symbol set (CC BY-ND 4.0), organized:
-  - `audio-sources/` — VCOs, noise, granular, physical modeling, wavetable, etc.
-  - `audio-modifiers/` — VCAs, filters, delays, LPGs, wavefolders, mixers, etc.
-  - `cv-sources/` — Envelopes, LFOs, clocks, sequencers, random, etc.
-  - `cv-modifiers/` — Quantizers, logic gates, S&H, slew limiters, multiples, etc.
-
-**PDF Manuals**: `[YOUR_MANUALS_DIR]/`
+**PDF Manuals**: Not configured on this machine. Skip manual lookups; use known specifications from the inventory and general module knowledge.
 
 ---
 
 ## System Overview
 
-> **Replace this section with your own system description.** List your cases, what's in each, and any special features (built-in utilities, bus boards, pre-patched connections, etc.).
+### Mantis Case (Primary)
+Tiptop Audio Mantis — 104HP × 2 rows (208HP total). Portable, bus-powered.
+Power: +12V 3000mA / -12V 1500mA / +5V 1500mA
 
-### [Case 1 Name]
-Houses: [list modules]
-Power: [specs]
-
-### [Case 2 Name]
-Houses: [list modules]
-Power: [specs]
+Houses all 19 documented modules. Two additional cases exist but are not yet catalogued.
 
 ---
 
 ## Quick Module Reference
 
-> **Populate these categories with your own modules.** Use the format `Module Name [Case]` with brief specs. Only list categories that apply to your system.
-
-**Clock Sources**:
-- [Module] [Case] (specs)
-
-**Quantizers**:
-- [Module] [Case] (specs)
-
-**Random/Chaos**:
-- [Module] [Case] (specs)
+**Clock Sources / Modulators**:
+- Pamela's PRO Workout (ALM, 8HP) — 8 independent outputs: clock div/mult, LFO, Euclidean, random. Master clock for all patches.
 
 **Sequencers**:
-- [Module] [Case] (specs)
+- Bloom V2 (Qu-Bit, 18HP) — Fractal 8-step sequencer. CV + Gate outputs. Branching/mutation controls.
 
-**Envelopes**:
-- [Module] [Case] (specs)
-
-**VCAs/Dynamics**:
-- [Module] [Case] (specs)
-
-**Mixers**:
-- [Module] [Case] (specs)
+**Oscillators**:
+- STO (Make Noise, 8HP) — Simple triangle oscillator. Sine + triangle outputs, FM, soft/hard sync. 1V/Oct.
+- Pleiades (CalSynth, 12HP) — Plaits clone macro-oscillator. 16 engines (VA, wavetable, FM, physical modeling, speech). Internal LPG via Gate input.
 
 **Filters**:
-- [Module] [Case] (specs)
+- Polaris (Intellijel, 10HP) — Multimode 4-pole (LP, HP, BP, notch, all-pass). Drive, resonance, FM input.
 
-**Effects & Processing**:
-- [Module] [Case] (specs)
+**Envelopes & Function Generators**:
+- Zadar (Xaoc Devices, 10HP) — Quad envelope/function generator. Dozens of shapes per channel. Trigger + cycle modes. No gate output.
+- MATHS (Make Noise, 20HP) — Analog function generator. Ch1+Ch4: AR with rise/fall, cycle mode. Ch2+Ch3: attenuverters. SUM + OR outputs. West Coast workhorse.
 
-**Modulation LFOs**:
-- [Module] [Case] (specs)
+**Granular & Sampling**:
+- Beads (Mutable Instruments, 14HP) — Granular texture synthesizer. Density, Position, Size, Pitch, Texture. Stereo out.
+- Squid Salmple (ALM, 21HP) — 8-channel sample player. Per-channel trigger + CV pitch. 8 individual outs + stereo mix.
+
+**VCAs & Mixers**:
+- Quad VCA (Intellijel, 12HP) — 4-channel linear/exponential VCA. Mix output. Use for dynamics and final summing.
+- Mega Milton (ALM, 8HP) — 4-channel audio mixer. Individual levels, stereo output.
+
+**Effects**:
+- MFX (ALM, 6HP) — Multi-effects (delay, reverb, chorus, flanger, etc.). Stereo I/O. Wet/Dry, Time, Depth.
+- Daisy Patch (Electrosmith, 20HP) — Programmable DSP (STM32H750). 4 CV in/out, 4 audio in/out, OLED, custom firmware.
+
+**Multi-Function**:
+- disting EX (Expert Sleepers, 8HP) — Dual-algorithm Swiss army knife. Quantizer, oscillator, filter, VCA, effects, sampler, and hundreds more.
 
 **Signal Routing / Utilities**:
-- [Module] [Case] (specs)
+- Buff Mult with Attenuators (Arcus Audio, 6HP) — 1-in, 4-out buffered multiple. Per-output attenuators. Use for V/Oct distribution.
+- Passive Multiple (4ms, 2HP ×2) — 1-in, 3-out passive mult. Fine for gates, triggers, mod CV — NOT pitch.
+- Listen IO (4ms, 6HP) — Eurorack stereo I/O. Headphone amp. Connects to monitors/external gear.
+- DATA (Mordax, 16HP) — Oscilloscope, spectrum analyzer, tuner, voltmeter. Monitoring only — no audio processing.
+
+---
+
+## Modules Currently Unavailable
+
+None at this time.
 
 ---
 
@@ -218,207 +105,182 @@ Classic subtractive synthesis path:
 1. Harmonically rich oscillator (saw, pulse) → Filter (LP/HP/BP) → VCA → Output
 2. Envelope generators control filter cutoff and VCA amplitude
 3. LFOs add movement to pitch, filter, amplitude
-4. Sequencers drive pitch via V/Oct (typically 1V/Oct standard)
+4. Sequencers drive pitch via V/Oct (1V/Oct standard)
 
 ### West Coast (Additive/Nonlinear)
 Complex oscillator and waveshaping path:
 1. Complex oscillator (modulation oscillator → carrier) → Wavefolder → Lowpass Gate → Output
-2. Function generators (AR/ASR with cycle mode) control LPGs
+2. Function generators (AR/ASR with cycle mode, e.g. MATHS) control LPGs
 3. LPGs combine VCA + filter behavior — "plonky" vactrol response
 4. Random/stochastic sources add controlled chaos
-5. Pitch standards may differ (Buchla uses 1.2V/Oct, most eurorack uses 1V/Oct)
 
 ### Generative Patching Framework
-When designing generative or self-playing patches:
-1. **Start with a stable clock source** — master clock or internal module clock
-2. **Add random/chaos** — random CV, probability gates, stochastic sources
-3. **Layer in quantization** — constrain random CV to musical scales
-4. **Create rhythmic complexity** — euclidean patterns, polymetric loops, clock divisions
-5. **Modulate the modulators** — LFOs modulating other LFOs, sequencers controlling modulation depth
-6. **Final mixing** — route voices through VCAs/mixer, add effects, set up performance controls
+1. **Start with a stable clock source** — Pamela's PRO Workout as master
+2. **Add random/chaos** — Bloom mutation, Pamela random outputs
+3. **Layer in quantization** — disting EX quantizer or Bloom scale lock
+4. **Create rhythmic complexity** — Pamela euclidean patterns, clock divisions
+5. **Modulate the modulators** — MATHS cycling, LFOs from Pamela modulating other LFOs
+6. **Final mixing** — Quad VCA or Mega Milton, effects via MFX, output via Listen IO
 
 ### Key Patching Principles
-- **Gain staging**: Watch signal levels between modules. Hot outputs can clip sensitive inputs.
-- **DC coupling**: Most eurorack modules are DC-coupled. LFOs, envelopes, and audio all travel the same cables.
-- **Normalling**: Many modules have normalled connections (internal routing that breaks when you patch into a jack). Check manuals for normalling behavior.
-- **Impedance**: Outputs drive inputs. Never patch output-to-output. Multiple inputs can share one output (use mults or stackcables for critical signals like V/Oct).
-- **Buffered vs passive mults**: Use buffered multiples for pitch CV distribution to avoid voltage droop. Passive mults/stackcables are fine for gates, triggers, and modulation CV.
-
----
-
-## Modules Currently Unavailable
-
-> **List any modules that are out for repair, on loan, or otherwise unavailable.** This prevents the assistant from including them in patch designs.
-
-- [Module Name]: [Reason] — DO NOT include in patch designs until further notice.
+- **Gain staging**: Watch levels. Hot outputs can clip sensitive inputs.
+- **DC coupling**: LFOs, envelopes, and audio all travel the same cables.
+- **Normalling**: Check manuals — many modules have internal routing that breaks when patched.
+- **Buffered vs passive mults**: Use Buff Mult for V/Oct pitch. Passive mults fine for gates and mod CV.
 
 ---
 
 ## Patching Guidelines
 
 ### Stackcables / Passive Splitting
-- If you have stackcables, note how many and use them freely for splitting one output to 2-3 destinations
-- For critical pitch CV (V/Oct), prefer buffered multiples to avoid voltage droop
-- When documenting patches, note stackcable splits in the cable table with "(stackcable)" in the Notes column
-
-### Known Limitations to Work Around
-
-> **Document your system's weak spots here** so the assistant can route around them. Examples:
-
-- Limited VCA count — need to share VCAs across voices
-- No dedicated quantizer — use sequencer or module built-in quantization
-- Single case — all patching is internal, no cross-case cables
-- Limited mixing — need external mixer for final output
+Use passive mults and stackcables freely for gates, triggers, and mod CV. Always use the Buff Mult for V/Oct pitch to prevent voltage droop.
 
 ### System Strengths to Leverage
+- Strong clock/modulation section (Pamela's 8 outputs covers euclidean, LFO, random)
+- Excellent envelope flexibility (Zadar quad + MATHS function generator)
+- Deep granular/sampling capabilities (Beads + Squid Salmple)
+- Programmable DSP voice (Daisy Patch)
+- Comprehensive monitoring (DATA oscilloscope)
 
-> **Document what your system excels at** so the assistant can lean into those strengths. Examples:
+### Known Limitations to Work Around
+- Single case for all documented modules
+- Limited oscillator count (STO + Pleiades only) — use Daisy Patch or disting EX as additional voice
+- Zadar has no gate output — use Pamela or Bloom gates for triggers
+- MFX is mono input if using a single voice
 
-- Strong modulation section (multiple LFOs, random sources)
-- Excellent sequencing (multiple sequencers with different approaches)
-- Deep effects chain (delay, reverb, granular)
-- Good voice count (multiple oscillators with independent signal paths)
+---
+
+## Conversational Patch Documentation
+
+When a user describes an existing patch (rather than asking you to design one), use this flow:
+
+### Intake Flow
+
+1. **Let the user describe freely** — any order, any level of detail. Do not interrupt.
+
+2. **Extract structure** from the description:
+   - Which modules are involved
+   - Signal connections (output jack → input jack)
+   - Knob/switch settings mentioned
+   - Modulation routings
+
+3. **Ask targeted follow-up questions only for**:
+   - Ambiguous jack names (e.g., "STO has triangle and sine outputs — which are you using?")
+   - Missing signal types (audio vs CV vs gate vs clock)
+   - Knob positions not mentioned (ask if they remember; don't guess)
+   - Unclear module identity (e.g., "which filter?" if Polaris vs disting isn't clear)
+
+4. **Show a cable table summary** for confirmation before generating files:
+   ```
+   Here's what I have — does this look right?
+   | # | From | Jack | To | Jack | Type |
+   ...
+   ```
+
+5. **Generate files** after user confirms.
+
+**Key rule**: Never guess at specific jack names or exact knob positions. Accuracy matters — this is documentation you'll use at the rack.
 
 ---
 
 ## Patching Response Format
 
-When suggesting patches, always use this format:
+When **designing** a new patch, always use:
 
 1. **Concept**: Brief description of what the patch does
-2. **Signal Flow Diagram**: ASCII art showing connections
+2. **Signal Flow** (ASCII): Quick overview of the signal chain
 3. **Module Settings**: Specific knob positions and switch settings
 4. **Modulation Routing**: What modulates what
-5. **Patch Cable Table**: Complete input/output connection list (see below)
+5. **Patch Cable Table**: Complete numbered cable list (see below)
 6. **Performance Tips**: How to interact with and vary the patch
-
-Example signal flow format:
-```
-CLOCK → SEQUENCER → QUANTIZER → OSCILLATOR → FILTER → VCA → OUTPUT
-  ↓         ↓           ↓            ↓          ↓       ↓
-LFO1     LFO2      LFO3        ENVELOPE1   ENVELOPE2  GATE
-```
 
 ### Patch Cable Table Format
 
-Every patch design MUST include a complete patch cable table listing every physical cable connection. Organize cables by category (Clock/Trigger, Pitch CV, Envelope/Dynamics, Audio Signal Path, Mixer/Effects, Modulation CV, Optional/Performance). Each row = one patch cable.
-
-Use this table format:
+Every patch MUST include a complete cable table organized by category. Each row = one physical cable.
 
 ```markdown
 | Cable | Output Module | Output Jack | Input Module | Input Jack | Signal Type | Notes |
 |-------|-------------|------------|-------------|-----------|-------------|-------|
-| 1 | [Clock] | Out 1 | [Envelope] | Trigger In | Gate | Envelope trigger |
-| 2 | [Sequencer] | CV Out | [Oscillator] | V/Oct In | CV (1V/Oct) | Pitch |
-| 3 | [Oscillator] | Output | [Filter] | Audio In | Audio | Main voice |
+| 1 | Pamela's PRO Workout | Out 1 | Bloom V2 | Clock In | Clock | Master clock |
 ```
 
-Guidelines:
-- Number every cable sequentially
-- **Output Module / Output Jack**: The source module and its specific output jack name
-- **Input Module / Input Jack**: The destination module and its specific input jack name
-- **Signal Type**: Gate, Clock, CV (with range like 0-5V or 1V/Oct), Audio, or Trigger
-- **Notes**: Brief description of the connection's purpose
-- Group cables by category with subheadings
-- If you have multiple cases, include the jack identifiers as documented in your inventory
-- End with a **Cable Summary** table showing cable counts by location and total
-- Mark optional/performance-only cables clearly
+Categories: Clock/Trigger → Pitch CV → Envelope/Dynamics → Audio Signal Path → Modulation CV → Optional/Performance
+
+End with a **Cable Summary** table showing total cable count.
 
 ---
 
-## Signal Flow SVG Diagram Generation
+## Interactive HTML Output
 
-> **This section is optional.** It requires the Patch & Tweak SVG symbol set. If you don't have the symbols, skip this section and the assistant will use ASCII signal flow diagrams only.
->
-> The Patch & Tweak symbols are available from Bjooks. If you have them, place them in `templates/miro/symbols/SVG/` and create a `symbol-mapping.md` that maps each of your modules to the appropriate symbol file.
+**IMPORTANT**: Every complete patch design or documented patch MUST produce two files:
+1. A `.md` markdown file (using `patch-template.md` as the base)
+2. An `.html` interactive file
 
-When creating a patch, generate an SVG signal flow diagram alongside the markdown documentation.
+### Before Generating HTML
 
-### How It Works
+**Always read** `templates/patch-interactive-reference.html` first. This is the canonical structure — use it exactly. Do not invent a different structure.
 
-1. **Read the symbol mapping** at `[YOUR_PROJECT_DIR]/templates/miro/symbol-mapping.md`
-2. **Read each required SVG symbol** from `templates/miro/symbols/SVG/`
-3. **Compose a single SVG file** arranging symbols in a signal flow layout with labeled connections
-4. **Save the SVG** alongside the patch markdown file
+### HTML Generation Rules
 
-### SVG Layout Rules
+1. **One self-contained file** — no external dependencies, no CDN links, no separate JS/CSS files.
 
-- **Canvas**: Use a viewBox wide enough to fit the flow (typically `0 0 1200 800` or larger)
-- **Symbol size**: Render each module symbol at 60x60px
-- **Flow direction**: Left to right for audio signal path; top to bottom for CV/modulation
-- **Grouping by case**: Group modules visually by case with labeled background rects. Omit any case with no modules in the patch.
-- **Module labels**: Module name as text below each symbol, font-size 10px
-- **Connection lines**: SVG `<line>` or `<path>` elements between symbols
-  - Color by signal type:
-    - **Audio**: `stroke="#E24A33"` (red)
-    - **CV/Modulation**: `stroke="#348ABD"` (blue)
-    - **Gate/Trigger**: `stroke="#52A35F"` (green)
-    - **Clock**: `stroke="#E5AE38"` (yellow)
-  - Use `stroke-width="2"` and `marker-end` arrowheads for direction
-  - Dashed lines for feedback loops
-- **Legend**: Include signal type color legend in the bottom corner
-- **Attribution**: If using Patch & Tweak symbols, include: `Patch Symbols from PATCH & TWEAK by Kim Bjørn and Chris Meyer, published by Bjooks (CC BY-ND 4.0)`
+2. **File location**: Same directory as the `.md` file.
+   - `patches/sequences/my-patch.html`
 
-### Embedding Symbols
+3. **PATCH data object**: Fill in all fields from the patch design:
+   - `title`, `category`, `complexity`, `voices`, `date`
+   - `viewBox` — set wide enough for all module positions + 40px padding
+   - `symbols[]` — embed only modules used in this patch
+   - `modules[]` — x/y positions (center of 60×60 icon), settings array
+   - `cables[]` — path `d` attribute as cubic bezier, plus all metadata
+   - `tips[]`
 
-To avoid CSS class-name conflicts between multiple embedded symbols, convert each symbol's class-based styles to inline presentation attributes before embedding. Wrap each in a `<symbol>` definition with a unique ID, then place with `<use>`.
+4. **SVG Symbol embedding**: For each module in the patch:
+   - Read its SVG file from `templates/miro/symbols/SVG/` (use `symbol-mapping.md` to find the right file)
+   - Strip the outer `<svg>` wrapper
+   - Prefix **all** CSS class names with the module id (e.g., `.cls-1` → `.polaris-cls-1`)
+   - Update all `class="..."` attributes inside to match the prefixed names
+   - Wrap in `<symbol id="sym-MODULEID" viewBox="...">...</symbol>` format
 
-### File Naming
+5. **Module positioning**: Use a consistent layout:
+   - **Main signal chain** (left to right): x starts at 70, increment ~150px, y = 110
+   - **Modulation sources** (below): y = 280
+   - **Canvas**: viewBox = `"0 0 W 400"` where W = last module x + 80 + 40
 
-- Same base filename as the patch markdown, with `.svg` extension
-- Same directory as the patch file
-- Reference from the markdown: `![Signal Flow](patch-name.svg)`
+6. **Cable paths**: Use cubic bezier curves (`C` command):
+   - Horizontal connections in main row: `M x1,y C midx,y midx,y x2,y`
+   - Vertical drops to modulation row: `M x,y1 C x,mid x,mid x,y2`
+   - Diagonal mod-to-main: arc gently upward to the destination
 
----
+7. **Signal type colors** (must be consistent):
+   | Type  | Color   |
+   |-------|---------|
+   | Audio | #E24A33 |
+   | CV    | #348ABD |
+   | Gate  | #52A35F |
+   | Clock | #E5AE38 |
+   | V/Oct | #9B59B6 |
 
-## Automatic Patch Documentation
+8. **Attribution**: Footer must include:
+   `Patch Symbols from PATCH & TWEAK by Kim Bjørn and Chris Meyer, published by Bjooks (CC BY-ND 4.0)`
 
-**IMPORTANT**: Whenever you create a complete patch design (not just answering questions), you MUST automatically save it as a markdown file.
-
-### File Creation Rules
-
-1. **When to create a file**:
-   - User requests a specific patch design
-   - You provide a complete patch with signal flow, settings, and modulation routing
-   - The patch is more than a quick tip or small modification
-
-2. **When NOT to create a file**:
-   - User asks general questions about modules
-   - You provide a quick tip or small modification to an existing patch
-   - User is troubleshooting
-
-3. **File location**: `[YOUR_PROJECT_DIR]/patches/[category]/`
-
-4. **File naming**: Lowercase with hyphens, descriptive of the patch concept
-   - Good: `slowly-evolving-drones.md`, `generative-west-coast-voice.md`
-   - Bad: `patch1.md`, `new-patch.md`, `untitled.md`
-
-5. **File format**: Include:
-   - Title (# Patch Name)
-   - Brief description
-   - Signal flow diagram section with SVG link (if SVG symbols available): `![Signal Flow](patch-name.svg)`
-   - ASCII signal flow diagram
-   - All module settings
-   - Modulation routing summary
-   - **Complete Patch Cable Table** (every cable, organized by category)
-   - Cable summary by case location with total count
-   - Performance tips
-   - Footer: `*Generated by Claude Code with eurorack-patcher skill*` and `*Date: YYYY-MM-DD*`
-
-6. **Signal flow SVG** (if symbols available): Generate alongside the markdown. Same base filename, `.svg` extension, same directory.
-
-7. **User notification**: After creating files, inform the user of the file path(s).
+9. **Notify the user**: After creating both files, show the paths.
 
 ### Example Workflow
+
 ```
-User: "create a patch for ambient textures"
-Assistant: [Reads module inventory to understand available modules]
-           [Designs complete patch with all details]
-           [Reads symbol-mapping.md for SVG symbols (if available)]
-           [Composes signal flow SVG diagram (if available)]
-           [Saves markdown to patches/drones/ambient-textures.md]
-           [Saves SVG to patches/drones/ambient-textures.svg (if available)]
-           [Informs user files were created]
+User: "document my patch — I have Pamela clocking Bloom, Bloom CV goes into the STO..."
+Assistant: [Listens to full description]
+           [Asks follow-up: "Which STO output are you using?" etc.]
+           [Shows cable table for confirmation]
+           [User: "yes that's right"]
+           [Reads modules/inventory.md]
+           [Reads symbol-mapping.md]
+           [Reads patch-interactive-reference.html for structure]
+           [Reads required SVG symbol files]
+           [Saves patches/sequences/patch-name.md]
+           [Saves patches/sequences/patch-name.html]
+           [Tells user: "Saved to patches/sequences/patch-name.html — open in a browser to view"]
 ```
 
 ---
@@ -426,28 +288,25 @@ Assistant: [Reads module inventory to understand available modules]
 ## When Using This Skill
 
 When the user asks about:
-- "How do I patch..." anything using their modules
 - Designing patches for specific sounds or techniques
+- Documenting an existing patch
 - Understanding how their modules interact
 - Troubleshooting patch designs
 - Learning about signal flow and routing
 - Creating generative, ambient, rhythmic, or experimental patches
-- Using sequencers and modulators together
 
 Always:
 1. **Read the module inventory first** — never guess what modules the user has
-2. Check manuals for specific parameters if needed
-3. Explain signal flow clearly
-4. Suggest creative combinations the user might not have considered
-5. Respect module unavailability — never include modules marked as unavailable
-6. Consider cross-case patching logistics if the user has multiple cases
+2. **Respect module unavailability** — never include modules marked as unavailable
+3. **Explain signal flow clearly** in both ASCII and the interactive HTML
+4. **Suggest creative combinations** the user might not have considered
+5. **Read the HTML reference template** before generating any interactive output
 
 ---
 
 ## Asking for Help
 
-If asked about:
-- Module specifications → Check the relevant PDF manual
+- Module specifications → Use general knowledge (manuals not configured on this machine)
 - Specific patching techniques → Reference technique notes and apply concepts
-- New module recommendations → Suggest based on documented system gaps and strengths
+- New module recommendations → Suggest based on system gaps and strengths
 - Troubleshooting → Ask about observed behavior, check signal flow, verify cable connections
