@@ -1,0 +1,215 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1060 470" font-family="Arial, Helvetica, sans-serif">
+
+  <defs>
+    <marker id="ar-audio" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+      <path d="M0,0 L0,6 L8,3 z" fill="#E24A33"/>
+    </marker>
+    <marker id="ar-cv" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+      <path d="M0,0 L0,6 L8,3 z" fill="#348ABD"/>
+    </marker>
+    <marker id="ar-gate" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+      <path d="M0,0 L0,6 L8,3 z" fill="#52A35F"/>
+    </marker>
+    <marker id="ar-clock" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+      <path d="M0,0 L0,6 L8,3 z" fill="#E5AE38"/>
+    </marker>
+    <marker id="ar-pitch" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+      <path d="M0,0 L0,6 L8,3 z" fill="#9B59B6"/>
+    </marker>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1060" height="470" fill="white"/>
+
+  <!-- Title -->
+  <text x="530" y="16" text-anchor="middle" font-size="13" font-weight="bold" fill="#222">Basic East Coast Patch — Mantis Case</text>
+
+  <!-- Case background -->
+  <rect x="10" y="24" width="1040" height="340" fill="#f7f7f7" stroke="#cccccc" stroke-width="1.5" rx="8"/>
+  <text x="20" y="40" font-size="9" font-weight="bold" fill="#aaa" letter-spacing="1">MANTIS CASE</text>
+
+  <!-- ======== MAIN ROW ICONS (top y=55, center y=85, bottom y=115) ======== -->
+
+  <!-- Pamela's PRO Workout — source-clock.svg (80×80, scale=0.75 → 60×60) translate(25,55) -->
+  <g transform="translate(25, 55) scale(0.75)">
+    <rect fill="#fff" x="1" y="1" width="78" height="78"/>
+    <path fill="#272525" d="M78,2V78H2V2H78m2-2H0V80H80V0Z"/>
+    <path fill="#272525" d="M27.87,58.83h3.32a3.73,3.73,0,0,1,.94.12,2.37,2.37,0,0,1,.84.37,2,2,0,0,1,.59.66,2,2,0,0,1,.23,1,1.77,1.77,0,0,1-.41,1.19,2.31,2.31,0,0,1-1.07.67v0a2.17,2.17,0,0,1,1.32.63,1.83,1.83,0,0,1,.52,1.38A2.25,2.25,0,0,1,33.87,66a2.19,2.19,0,0,1-.72.76,3.13,3.13,0,0,1-1,.41,5.29,5.29,0,0,1-1.19.13H27.87Zm1.52,3.46h1.34a1.88,1.88,0,0,0,1.15-.3,1,1,0,0,0,.4-.85.87.87,0,0,0-.41-.82,2.6,2.6,0,0,0-1.27-.24H29.39Zm0,3.77h1.35a5,5,0,0,0,.63,0,1.72,1.72,0,0,0,.61-.17,1.26,1.26,0,0,0,.47-.38,1.08,1.08,0,0,0,.19-.68,1,1,0,0,0-.46-.93,2.75,2.75,0,0,0-1.38-.27H29.39Z"/>
+    <path fill="#272525" d="M35.64,58.83h2.77a6.56,6.56,0,0,1,1.32.13,2.82,2.82,0,0,1,1,.44,2.08,2.08,0,0,1,.65.76,2.62,2.62,0,0,1,.22,1.13,2.41,2.41,0,0,1-.26,1.19,2.11,2.11,0,0,1-.71.77,3.09,3.09,0,0,1-1,.43,5.85,5.85,0,0,1-1.28.13H37.15v3.52H35.64Zm2.57,3.71a5.24,5.24,0,0,0,.7,0,1.77,1.77,0,0,0,.6-.2,1,1,0,0,0,.42-.37,1.09,1.09,0,0,0,.16-.63,1,1,0,0,0-.16-.6,1,1,0,0,0-.41-.37,1.56,1.56,0,0,0-.59-.17,4.94,4.94,0,0,0-.68,0h-1.1v2.44Z"/>
+    <path fill="#272525" d="M43,58.83h2.36l2.21,6h0l2.18-6h2.38v8.5h-1.5V60.5h0L48,67.33H47L44.42,60.5h0v6.83H43Z"/>
+    <circle fill="#272525" cx="19.9" cy="31.55" r="3.72"/>
+    <circle fill="#272525" cx="33.3" cy="31.55" r="3.72"/>
+    <circle fill="#272525" cx="46.7" cy="31.55" r="3.72"/>
+    <circle fill="#272525" cx="60.1" cy="31.55" r="3.72"/>
+  </g>
+
+  <!-- Bloom V2 — cv-gate-sequencer.svg (80×80, scale=0.75 → 60×60) translate(165,55) -->
+  <g transform="translate(165, 55) scale(0.75)">
+    <rect fill="#fff" x="1" y="1" width="78" height="78"/>
+    <path fill="#272525" d="M78,2V78H2V2H78m2-2H0V80H80V0Z"/>
+    <circle fill="none" stroke="#272425" stroke-miterlimit="10" stroke-width="1.5" cx="14.11" cy="29.75" r="5.75"/>
+    <line fill="none" stroke="#272425" stroke-miterlimit="10" stroke-width="1.5" x1="14.11" y1="29.01" x2="14.11" y2="24"/>
+    <circle fill="none" stroke="#272425" stroke-miterlimit="10" stroke-width="1.5" cx="31.37" cy="29.75" r="5.75"/>
+    <line fill="none" stroke="#272425" stroke-miterlimit="10" stroke-width="1.5" x1="30.85" y1="29.23" x2="27.3" y2="25.68"/>
+    <circle fill="none" stroke="#272425" stroke-miterlimit="10" stroke-width="1.5" cx="48.63" cy="29.75" r="5.75"/>
+    <line fill="none" stroke="#272425" stroke-miterlimit="10" stroke-width="1.5" x1="49" y1="29.11" x2="51.51" y2="24.77"/>
+    <circle fill="none" stroke="#272425" stroke-miterlimit="10" stroke-width="1.5" cx="65.89" cy="29.75" r="5.75"/>
+    <line fill="none" stroke="#272425" stroke-miterlimit="10" stroke-width="1.5" x1="66.53" y1="29.38" x2="70.87" y2="26.88"/>
+    <circle fill="none" stroke="#272425" stroke-miterlimit="10" stroke-width="1.5" cx="14.11" cy="50.25" r="5.75"/>
+    <line fill="none" stroke="#272425" stroke-miterlimit="10" stroke-width="1.5" x1="14.59" y1="49.68" x2="17.81" y2="45.84"/>
+    <circle fill="none" stroke="#272425" stroke-miterlimit="10" stroke-width="1.5" cx="31.37" cy="50.25" r="5.75"/>
+    <line fill="none" stroke="#272425" stroke-miterlimit="10" stroke-width="1.5" x1="32.11" y1="50.25" x2="37.12" y2="50.25"/>
+    <circle fill="none" stroke="#272425" stroke-miterlimit="10" stroke-width="1.5" cx="48.63" cy="50.25" r="5.75"/>
+    <line fill="none" stroke="#272425" stroke-miterlimit="10" stroke-width="1.5" x1="48.11" y1="49.72" x2="44.56" y2="46.18"/>
+    <circle fill="none" stroke="#272425" stroke-miterlimit="10" stroke-width="1.5" cx="65.89" cy="50.25" r="5.75"/>
+    <line fill="none" stroke="#272425" stroke-miterlimit="10" stroke-width="1.5" x1="65.89" y1="49.51" x2="65.89" y2="44.49"/>
+  </g>
+
+  <!-- Buff Mult — buffered-multiple.svg (103.9×103.9, scale=0.577 → ~60×60) translate(300,55) -->
+  <g transform="translate(300, 55) scale(0.577)">
+    <rect fill="#fff" x="16.22" y="16.22" width="71.47" height="71.47" transform="rotate(-45 51.95 51.95)"/>
+    <path fill="#272525" d="M52,2.83,101.07,52,52,101.07,2.83,52,52,2.83M52,0,0,52l52,52L103.9,52,52,0Z"/>
+    <line fill="none" stroke="#272525" stroke-miterlimit="10" stroke-width="1.5" x1="51.02" y1="51.94" x2="76.16" y2="51.94"/>
+    <line fill="none" stroke="#272525" stroke-miterlimit="10" stroke-width="1.5" x1="19.73" y1="51.94" x2="45.55" y2="51.94"/>
+    <line fill="none" stroke="#272525" stroke-miterlimit="10" stroke-width="1.5" x1="51.02" y1="67.76" x2="76.16" y2="67.76"/>
+    <line fill="none" stroke="#272525" stroke-miterlimit="10" stroke-width="1.55" x1="45.76" y1="35.12" x2="45.76" y2="68.77"/>
+    <line fill="none" stroke="#272525" stroke-miterlimit="10" stroke-width="1.5" x1="76.16" y1="36.13" x2="51.02" y2="36.13"/>
+  </g>
+
+  <!-- STO — sawtooth-wave-oscillator.svg (80×80, scale=0.75 → 60×60) translate(430,55) -->
+  <g transform="translate(430, 55) scale(0.75)">
+    <circle fill="#fff" cx="40" cy="40.01" r="39"/>
+    <path fill="#272525" d="M40,2A38,38,0,1,1,2,40,38,38,0,0,1,40,2m0-2A40,40,0,1,0,80,40,40,40,0,0,0,40,0Z"/>
+    <polyline fill="none" stroke="#272525" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" points="17.27 40 17.27 24.54 41 55.48 41 24.54 64.79 55.48 64.79 40.09"/>
+  </g>
+
+  <!-- Polaris — low-pass-filter-resonant.svg (84.06×88, scale=0.682 → ~57×60) translate(557,57) -->
+  <g transform="translate(557, 57) scale(0.682)">
+    <polygon fill="#fff" points="1 1.65 81.9 44 1 86.35 1 1.65"/>
+    <path fill="#272525" d="M2,3.3,79.75,44,2,84.7V3.3M0,0V88L84.06,44,0,0Z"/>
+    <path fill="none" stroke="#272425" stroke-miterlimit="10" stroke-width="2" d="M5.67,38.61s14.5-.41,19.5-.41,5.66-14,14.66,0,9.61,15.61,9.61,15.61"/>
+  </g>
+
+  <!-- Quad VCA — amplifier-vca.svg (84.06×88, scale=0.682 → ~57×60) translate(700,57) -->
+  <g transform="translate(700, 57) scale(0.682)">
+    <polygon fill="#fff" points="0.94 1.56 82.02 44 0.94 86.44 0.94 1.56"/>
+    <path fill="#272525" d="M1.89,3.12,80,44,1.89,84.88V3.12M0,0V88L84.06,44,0,0Z"/>
+    <line fill="none" stroke="#272525" stroke-miterlimit="10" stroke-width="2" x1="12.07" y1="58.34" x2="35.42" y2="35"/>
+    <polygon fill="#272525" points="31.52 32.03 38.39 38.9 38.39 32.03 31.52 32.03"/>
+  </g>
+
+  <!-- Listen IO — custom symbol (103.9×103.9, scale=0.577 → ~60×60) translate(850,55) -->
+  <g transform="translate(850, 55) scale(0.577)">
+    <polygon points="51.95,8.95 82.36,21.54 94.95,51.95 82.36,82.36 51.95,94.95 21.54,82.36 8.95,51.95 21.54,21.54" fill="#fff" stroke="#272525" stroke-width="2.5" stroke-miterlimit="10"/>
+    <text x="51.95" y="60" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="28" font-weight="bold" fill="#272525">IO</text>
+  </g>
+
+  <!-- ======== MOD ROW ICONS (top y=240, center y=270, bottom y=300) ======== -->
+
+  <!-- Passive Mult — custom symbol translate(165,240) -->
+  <g transform="translate(165, 240) scale(0.577)">
+    <polygon points="51.95,8.95 82.36,21.54 94.95,51.95 82.36,82.36 51.95,94.95 21.54,82.36 8.95,51.95 21.54,21.54" fill="#fff" stroke="#272525" stroke-width="2.5" stroke-miterlimit="10"/>
+    <text x="51.95" y="60" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="28" font-weight="bold" fill="#272525">×4</text>
+  </g>
+
+  <!-- Zadar — eg-adsr.svg (80×80, scale=0.75 → 60×60) translate(618,240) -->
+  <g transform="translate(618, 240) scale(0.75)">
+    <rect fill="#fff" x="1" y="1" width="78" height="78"/>
+    <path fill="#272525" d="M78,2V78H2V2H78m2-2H0V80H80V0Z"/>
+    <polyline fill="none" stroke="#272425" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" points="10.63 56.13 23.21 23.88 35.8 40 50.49 40 69.38 56.13"/>
+    <line fill="none" stroke="#272525" stroke-miterlimit="10" stroke-dasharray="4 4" x1="1.89" y1="56.5" x2="78.43" y2="56.5"/>
+  </g>
+
+  <!-- ======== MODULE LABELS ======== -->
+  <!-- Main row: icon bottom at y=115 (sq) / y=117 (tri) -->
+  <text x="55" y="129" text-anchor="middle" font-size="9" font-weight="bold" fill="#222">Pamela's PRO</text>
+  <text x="55" y="140" text-anchor="middle" font-size="8" fill="#777">Clock / LFO</text>
+
+  <text x="195" y="129" text-anchor="middle" font-size="9" font-weight="bold" fill="#222">Bloom V2</text>
+  <text x="195" y="140" text-anchor="middle" font-size="8" fill="#777">Sequencer</text>
+
+  <text x="330" y="129" text-anchor="middle" font-size="9" font-weight="bold" fill="#222">Buff Mult</text>
+  <text x="330" y="140" text-anchor="middle" font-size="8" fill="#777">Pitch Buffer</text>
+
+  <text x="460" y="129" text-anchor="middle" font-size="9" font-weight="bold" fill="#222">STO</text>
+  <text x="460" y="140" text-anchor="middle" font-size="8" fill="#777">VCO</text>
+
+  <text x="586" y="131" text-anchor="middle" font-size="9" font-weight="bold" fill="#222">Polaris</text>
+  <text x="586" y="142" text-anchor="middle" font-size="8" fill="#777">Filter (LP)</text>
+
+  <text x="729" y="131" text-anchor="middle" font-size="9" font-weight="bold" fill="#222">Quad VCA</text>
+  <text x="729" y="142" text-anchor="middle" font-size="8" fill="#777">VCA</text>
+
+  <text x="880" y="129" text-anchor="middle" font-size="9" font-weight="bold" fill="#222">Listen IO</text>
+  <text x="880" y="140" text-anchor="middle" font-size="8" fill="#777">Output</text>
+
+  <!-- Mod row: icon bottom at y=300 -->
+  <text x="195" y="314" text-anchor="middle" font-size="9" font-weight="bold" fill="#222">Passive Mult</text>
+  <text x="195" y="325" text-anchor="middle" font-size="8" fill="#777">Gate Split</text>
+
+  <text x="648" y="314" text-anchor="middle" font-size="9" font-weight="bold" fill="#222">Zadar</text>
+  <text x="648" y="325" text-anchor="middle" font-size="8" fill="#777">Envelopes ×2</text>
+
+  <!-- ======== CONNECTION LINES ======== -->
+
+  <!-- 1. Clock: Pamela → Bloom (center y=85) -->
+  <line x1="85" y1="85" x2="163" y2="85" stroke="#E5AE38" stroke-width="2" marker-end="url(#ar-clock)"/>
+
+  <!-- 2. Pitch CV: Bloom → Buff Mult (slightly above center) -->
+  <line x1="225" y1="82" x2="298" y2="82" stroke="#9B59B6" stroke-width="2" marker-end="url(#ar-pitch)"/>
+
+  <!-- 3. Pitch CV: Buff Mult → STO -->
+  <line x1="360" y1="85" x2="428" y2="85" stroke="#9B59B6" stroke-width="2" marker-end="url(#ar-pitch)"/>
+
+  <!-- 4. Gate: Bloom → Passive Mult (vertical drop) -->
+  <line x1="195" y1="115" x2="195" y2="238" stroke="#52A35F" stroke-width="2" marker-end="url(#ar-gate)"/>
+
+  <!-- 5. Gate: Passive Mult → Zadar (×2 triggers) -->
+  <line x1="225" y1="270" x2="616" y2="270" stroke="#52A35F" stroke-width="2" marker-end="url(#ar-gate)"/>
+  <rect x="372" y="256" width="74" height="12" fill="white" rx="2"/>
+  <text x="409" y="266" text-anchor="middle" font-size="8" fill="#52A35F">× 2 triggers</text>
+
+  <!-- 6. Audio: STO → Polaris -->
+  <line x1="490" y1="85" x2="555" y2="85" stroke="#E24A33" stroke-width="2" marker-end="url(#ar-audio)"/>
+
+  <!-- 7. Audio: Polaris → Quad VCA -->
+  <line x1="615" y1="87" x2="698" y2="87" stroke="#E24A33" stroke-width="2" marker-end="url(#ar-audio)"/>
+
+  <!-- 8. Audio: Quad VCA → Listen IO -->
+  <line x1="757" y1="87" x2="848" y2="87" stroke="#E24A33" stroke-width="2" marker-end="url(#ar-audio)"/>
+
+  <!-- 9. CV Mod: Zadar Ch1 → Polaris FM (curve up-left) -->
+  <path d="M 632,240 C 632,190 586,175 586,119" fill="none" stroke="#348ABD" stroke-width="2" marker-end="url(#ar-cv)"/>
+  <text x="602" y="196" text-anchor="middle" font-size="7" fill="#348ABD">filter env</text>
+
+  <!-- 10. CV Mod: Zadar Ch2 → Quad VCA CV (curve up-right) -->
+  <path d="M 664,240 C 664,190 729,175 729,119" fill="none" stroke="#348ABD" stroke-width="2" marker-end="url(#ar-cv)"/>
+  <text x="715" y="196" text-anchor="start" font-size="7" fill="#348ABD">amp env</text>
+
+  <!-- ======== LEGEND ======== -->
+  <rect x="10" y="360" width="1040" height="70" fill="#f0f0f0" stroke="#cccccc" stroke-width="1" rx="6"/>
+  <text x="20" y="376" font-size="8" font-weight="bold" fill="#666" letter-spacing="1">SIGNAL TYPES</text>
+
+  <line x1="20" y1="392" x2="50" y2="392" stroke="#E24A33" stroke-width="2.5" marker-end="url(#ar-audio)"/>
+  <text x="56" y="396" font-size="9" fill="#333">Audio</text>
+
+  <line x1="120" y1="392" x2="150" y2="392" stroke="#348ABD" stroke-width="2.5" marker-end="url(#ar-cv)"/>
+  <text x="156" y="396" font-size="9" fill="#333">CV / Modulation</text>
+
+  <line x1="280" y1="392" x2="310" y2="392" stroke="#52A35F" stroke-width="2.5" marker-end="url(#ar-gate)"/>
+  <text x="316" y="396" font-size="9" fill="#333">Gate / Trigger</text>
+
+  <line x1="425" y1="392" x2="455" y2="392" stroke="#E5AE38" stroke-width="2.5" marker-end="url(#ar-clock)"/>
+  <text x="461" y="396" font-size="9" fill="#333">Clock</text>
+
+  <line x1="520" y1="392" x2="550" y2="392" stroke="#9B59B6" stroke-width="2.5" marker-end="url(#ar-pitch)"/>
+  <text x="556" y="396" font-size="9" fill="#333">V/Oct Pitch</text>
+
+  <!-- Cable count -->
+  <text x="1040" y="396" text-anchor="end" font-size="9" fill="#888">11 cables total</text>
+
+  <!-- Attribution -->
+  <text x="530" y="420" text-anchor="middle" font-size="7" fill="#bbb">Patch Symbols from PATCH &amp; TWEAK by Kim Bjørn and Chris Meyer, published by Bjooks (CC BY-ND 4.0)</text>
+  <text x="530" y="432" text-anchor="middle" font-size="7" fill="#bbb">Generated by Claude Code with eurorack-patcher skill</text>
+
+</svg>
