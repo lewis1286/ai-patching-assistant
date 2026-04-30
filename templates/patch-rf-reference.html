@@ -1,0 +1,724 @@
+<!DOCTYPE html>
+<!--
+  Canonical Eurorack patch template — React Flow + ELK auto-layout.
+
+  To create a new patch:
+    1. Copy this file to patches/<category>/<patch-name>.html
+    2. Replace the <h1 id="ph-title"> + .patch-meta values in the header
+    3. Replace the PATCH = { ... } object below with your patch's data
+    4. Update the page <title>
+  Everything else (CSS, ELK setup, custom edge, hover sync, table) is shared
+  infrastructure — leave it alone.
+
+  PATCH schema:
+    title       string         display title in header
+    category    string         Sequences | Drones | Percussion | Effects | Experimental
+    complexity  string         Simple | Medium | Complex
+    voices      string         free text describing voicing (e.g. "1 voice", "3 melodic + drums")
+    date        string         YYYY-MM-DD
+    modules[]   { id, name, mfr, inputs[], outputs[], settings[] }
+                    id        unique short slug (used as React Flow node id and in cables[])
+                    inputs    array of jack names rendered on the left side of the node
+                    outputs   array of jack names rendered on the right side of the node
+                    settings  [{ k: "Knob", v: "Value or note" }, ...]  — shown in the side panel
+    cables[]    { id, num, type, from, fromPort, to, toPort, label }
+                    id        unique slug (e.g. "c1", "c2", ...)
+                    num       integer cable number — appears as a badge on the edge
+                    type      audio | cv | gate | clock | pitch
+                    from/to   module ids
+                    fromPort/toPort  jack names (must match a string in the module's outputs/inputs)
+                    label     short description shown in the hover tooltip
+    tips[]      array of strings — performance / variation suggestions
+
+  Layout, edge routing, back-edge under-row routing, badge placement, hover
+  highlight, and table↔canvas hover sync all happen automatically based on the
+  data above. No manual x/y, no manual paths.
+-->
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Patch Name — Eurorack Patcher</title>
+  <link rel="stylesheet" href="https://unpkg.com/@xyflow/react@12/dist/style.css">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #f5f5f5; color: #222; display: flex; flex-direction: column; min-height: 100vh; }
+
+    .patch-header { background: #1a1a1a; color: #fff; padding: 16px 24px 12px; flex-shrink: 0; }
+    .patch-header h1 { font-size: 1.25rem; font-weight: 600; letter-spacing: -0.01em; }
+    .patch-meta { display: flex; gap: 14px; margin-top: 5px; flex-wrap: wrap; font-size: 0.78rem; color: #aaa; align-items: center; }
+    .badge { display: inline-block; padding: 1px 7px; border-radius: 10px; font-size: 0.72rem; font-weight: 600; background: #333; color: #ccc; }
+
+    .controls { background: #fff; border-bottom: 1px solid #e0e0e0; padding: 8px 24px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; flex-shrink: 0; }
+    .controls-label { font-size: 0.75rem; color: #888; font-weight: 500; }
+    .type-btn { border: 1.5px solid currentColor; background: transparent; border-radius: 14px; padding: 3px 11px; font-size: 0.75rem; font-weight: 600; cursor: pointer; transition: background 0.15s; }
+    .type-btn[data-type="audio"]  { color: #E24A33; } .type-btn[data-type="cv"]    { color: #348ABD; }
+    .type-btn[data-type="gate"]   { color: #52A35F; } .type-btn[data-type="clock"] { color: #E5AE38; }
+    .type-btn[data-type="pitch"]  { color: #9B59B6; }
+    .type-btn.active { color: #fff; }
+    .type-btn.active[data-type="audio"]  { background: #E24A33; border-color: #E24A33; }
+    .type-btn.active[data-type="cv"]     { background: #348ABD; border-color: #348ABD; }
+    .type-btn.active[data-type="gate"]   { background: #52A35F; border-color: #52A35F; }
+    .type-btn.active[data-type="clock"]  { background: #E5AE38; border-color: #E5AE38; }
+    .type-btn.active[data-type="pitch"]  { background: #9B59B6; border-color: #9B59B6; }
+    .divider { width: 1px; height: 22px; background: #ddd; margin: 0 4px; }
+    .anim-btn { border: 1.5px solid #bbb; background: transparent; border-radius: 14px; padding: 3px 11px; font-size: 0.75rem; font-weight: 500; cursor: pointer; color: #666; }
+    .anim-btn.active { background: #1a1a1a; border-color: #1a1a1a; color: #fff; }
+
+    #rf-wrap { flex: 1; min-height: 600px; position: relative; }
+    #rf-root { width: 100%; height: 100%; }
+
+    /* Custom node */
+    .mod-node { background: #fff; border: 1px solid #d1d5db; border-radius: 8px; box-shadow: 0 1px 6px rgba(0,0,0,0.1); min-width: 170px; cursor: default; }
+    .mod-node.selected, .mod-node:focus { border-color: #6366f1; border-width: 2px; outline: none; }
+    .mod-hdr { background: #1e293b; border-radius: 7px 7px 0 0; height: 42px; padding: 0 10px; display: flex; flex-direction: column; justify-content: center; overflow: hidden; }
+    .mod-node.selected .mod-hdr { background: #4338ca; }
+    .mod-name { font-size: 11px; font-weight: 700; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 150px; }
+    .mod-mfr  { font-size: 9px; color: #94a3b8; margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 150px; }
+    .mod-ports { display: flex; padding: 6px 0 6px; }
+    .ports-col { display: flex; flex-direction: column; flex: 1; }
+    .ports-col.right { align-items: flex-end; }
+    .port-row { display: flex; align-items: center; height: 22px; padding: 0 10px; }
+    .port-row.right { flex-direction: row-reverse; }
+    .port-lbl { font-size: 9px; color: #475569; white-space: nowrap; max-width: 68px; overflow: hidden; text-overflow: ellipsis; }
+
+    /* Override RF handle defaults */
+    .react-flow__handle { width: 10px !important; height: 10px !important; border: 2px solid #fff !important; }
+    .react-flow__handle-left  { left:  -5px !important; }
+    .react-flow__handle-right { right: -5px !important; }
+
+    /* Edge tooltip */
+    #edge-tip { position: fixed; background: #1e293b; color: #fff; border-radius: 8px; padding: 8px 13px; font-size: 0.78rem; line-height: 1.5; pointer-events: none; z-index: 1000; opacity: 0; transition: opacity 0.12s; max-width: 280px; box-shadow: 0 4px 16px rgba(0,0,0,0.3); }
+    #edge-tip.show { opacity: 1; }
+    .tip-type  { font-size: 0.68rem; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; margin-bottom: 2px; }
+    .tip-route { font-weight: 600; }
+    .tip-ports { color: #94a3b8; font-size: 0.72rem; }
+    .tip-note  { color: #94a3b8; font-size: 0.73rem; margin-top: 3px; }
+
+    /* Side panel */
+    #mod-panel { position: fixed; top: 0; right: 0; width: 300px; height: 100vh; background: #fff; border-left: 1px solid #e0e0e0; box-shadow: -4px 0 20px rgba(0,0,0,0.1); z-index: 500; transform: translateX(100%); transition: transform 0.22s ease; display: flex; flex-direction: column; overflow-y: auto; }
+    #mod-panel.open { transform: translateX(0); }
+    .panel-hdr { padding: 16px 18px 12px; border-bottom: 1px solid #e8e8e8; display: flex; justify-content: space-between; align-items: flex-start; }
+    .panel-hdr h2 { font-size: 1rem; font-weight: 600; }
+    .panel-mfr { font-size: 0.75rem; color: #888; margin-top: 2px; }
+    .panel-close { background: none; border: none; cursor: pointer; color: #888; font-size: 1.2rem; padding: 2px 4px; }
+    .panel-close:hover { color: #333; }
+    .panel-body { padding: 14px 18px; }
+    .p-section { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #999; margin: 14px 0 6px; }
+    .p-row { display: flex; justify-content: space-between; align-items: baseline; padding: 4px 0; border-bottom: 1px solid #f2f2f2; font-size: 0.83rem; }
+    .p-row .k { color: #555; } .p-row .v { color: #222; font-weight: 500; text-align: right; max-width: 55%; }
+    .p-cables { margin-top: 8px; }
+    .p-cable  { display: flex; align-items: center; gap: 8px; padding: 5px 0; font-size: 0.78rem; border-bottom: 1px solid #f2f2f2; }
+    .cdot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+
+    /* Below canvas */
+    .patch-content { padding: 24px; max-width: 900px; flex-shrink: 0; }
+    details { margin-bottom: 16px; }
+    summary { cursor: pointer; font-size: 0.85rem; font-weight: 600; color: #333; padding: 10px 14px; background: #fff; border: 1px solid #e0e0e0; border-radius: 6px; list-style: none; display: flex; justify-content: space-between; }
+    summary::-webkit-details-marker { display: none; }
+    summary::after { content: "▸"; color: #aaa; }
+    details[open] summary { border-radius: 6px 6px 0 0; }
+    details[open] summary::after { content: "▾"; }
+    .details-body { border: 1px solid #e0e0e0; border-top: none; border-radius: 0 0 6px 6px; background: #fff; padding: 14px; }
+    .tips-list { list-style: none; }
+    .tips-list li { padding: 7px 0; border-bottom: 1px solid #f0f0f0; font-size: 0.85rem; line-height: 1.55; color: #444; }
+    .tips-list li:last-child { border-bottom: none; }
+    .tips-list li::before { content: "→ "; color: #aaa; }
+    .cable-table { width: 100%; border-collapse: collapse; font-size: 0.78rem; }
+    .cable-table th { text-align: left; font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #888; border-bottom: 2px solid #e0e0e0; padding: 6px 8px; }
+    .cable-table td { padding: 5px 8px; border-bottom: 1px solid #f0f0f0; color: #333; }
+    .cable-table tr:hover td { background: #fafafa; }
+    .cable-table tr.cable-row { cursor: default; }
+    .cable-table tr.cable-row.hover-edge td { background: #fff4d6; box-shadow: inset 2px 0 0 #1a1a1a; }
+    .cable-table .cn { color: #bbb; font-weight: 600; }
+    .sig { display: inline-block; padding: 1px 6px; border-radius: 8px; font-size: 0.68rem; font-weight: 700; color: #fff; }
+    .sig.audio { background: #E24A33; } .sig.cv    { background: #348ABD; }
+    .sig.gate  { background: #52A35F; } .sig.clock { background: #E5AE38; color:#333; }
+    .sig.pitch { background: #9B59B6; }
+    .csec td { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #aaa; padding-top: 12px; padding-bottom: 2px; background: none !important; }
+    .patch-footer { padding: 16px 24px; font-size: 0.72rem; color: #999; border-top: 1px solid #e0e0e0; flex-shrink: 0; }
+  </style>
+</head>
+<body>
+
+<header class="patch-header">
+  <h1 id="ph-title">Patch Name</h1>
+  <div class="patch-meta">
+    <span class="badge" id="ph-cat">Category</span>
+    <span class="badge" id="ph-cx">Complexity</span>
+    <span id="ph-voices">N voices</span>
+    <span id="ph-date">YYYY-MM-DD</span>
+  </div>
+</header>
+
+<div class="controls" id="ctrl-bar">
+  <span class="controls-label">Show:</span>
+  <button class="type-btn active" data-type="audio">Audio</button>
+  <button class="type-btn active" data-type="cv">CV</button>
+  <button class="type-btn active" data-type="gate">Gate</button>
+  <button class="type-btn active" data-type="clock">Clock</button>
+  <button class="type-btn active" data-type="pitch">V/Oct</button>
+  <div class="divider"></div>
+  <button class="anim-btn" id="anim-btn">▶ Animate</button>
+</div>
+
+<div id="rf-wrap"><div id="rf-root"></div></div>
+
+<div id="edge-tip">
+  <div class="tip-type"  id="tip-type"></div>
+  <div class="tip-route" id="tip-route"></div>
+  <div class="tip-ports" id="tip-ports"></div>
+  <div class="tip-note"  id="tip-note"></div>
+</div>
+
+<div id="mod-panel">
+  <div class="panel-hdr">
+    <div><h2 id="pn-name"></h2><div class="panel-mfr" id="pn-mfr"></div></div>
+    <button class="panel-close" id="pn-close">✕</button>
+  </div>
+  <div class="panel-body" id="pn-body"></div>
+</div>
+
+<div class="patch-content">
+  <details>
+    <summary>Performance Tips</summary>
+    <div class="details-body"><ul class="tips-list" id="tips-list"></ul></div>
+  </details>
+  <details>
+    <summary>Full Cable Table</summary>
+    <div class="details-body">
+      <table class="cable-table">
+        <thead><tr><th>#</th><th>From</th><th>Jack</th><th>To</th><th>Jack</th><th>Type</th><th>Notes</th></tr></thead>
+        <tbody id="cable-tbody"></tbody>
+      </table>
+    </div>
+  </details>
+</div>
+
+<footer class="patch-footer">Generated by Claude Code with eurorack-patcher skill</footer>
+
+<script type="importmap">
+{
+  "imports": {
+    "react":                 "https://esm.sh/react@18",
+    "react/jsx-runtime":     "https://esm.sh/react@18/jsx-runtime",
+    "react/jsx-dev-runtime": "https://esm.sh/react@18/jsx-dev-runtime",
+    "react-dom":             "https://esm.sh/react-dom@18",
+    "react-dom/client":      "https://esm.sh/react-dom@18/client"
+  }
+}
+</script>
+<script type="module">
+import React, { useState, useMemo, useCallback, useEffect } from 'https://esm.sh/react@18'
+import { createRoot } from 'https://esm.sh/react-dom@18/client'
+import {
+  ReactFlow, ReactFlowProvider, Background, Controls, MiniMap,
+  Handle, Position, MarkerType, BaseEdge, useReactFlow, useNodesState
+} from 'https://esm.sh/@xyflow/react@12?external=react,react-dom'
+import htm from 'https://esm.sh/htm@3'
+import ELK from 'https://esm.sh/elkjs@0.9.3/lib/elk.bundled.js'
+
+const html = htm.bind(React.createElement)
+
+// ─────────────────────────────────────────────────────────────
+// PATCH DATA — replace this whole object with the new patch's data.
+// Schema is documented in the comment at the top of the file.
+// ─────────────────────────────────────────────────────────────
+const PATCH = {
+  title: "Patch Name",
+  category: "Experimental",
+  complexity: "Simple",
+  voices: "1 voice",
+  date: "YYYY-MM-DD",
+  modules: [
+    // Source module — only outputs (no inputs)
+    { id: "pams", name: "Pamela's PRO Workout", mfr: "ALM Busy Circuits",
+      inputs: [],
+      outputs: ["Out 1"],
+      settings: [{ k: "Out 1", v: "Master clock ÷1" }] },
+
+    // Sequencer — clock in, pitch out
+    { id: "bloom", name: "Bloom V2", mfr: "Qu-Bit Electronix",
+      inputs: ["Clock in"],
+      outputs: ["Note 1"],
+      settings: [
+        { k: "Note 1", v: "Sequenced pitch → STO" },
+        { k: "Scale",  v: "Minor" },
+      ] },
+
+    // Voice — pitch in, audio out
+    { id: "sto", name: "STO", mfr: "Make Noise",
+      inputs: ["1V/Oct"],
+      outputs: ["Complex out"],
+      settings: [{ k: "Frequency", v: "C2" }] },
+
+    // Sink module — only inputs (no outputs)
+    { id: "out", name: "Listen IO", mfr: "4ms Company",
+      inputs: ["L in"],
+      outputs: [],
+      settings: [{ k: "Output", v: "To monitors" }] },
+  ],
+  cables: [
+    { id: "c1", num: 1, type: "clock", from: "pams",  fromPort: "Out 1",       to: "bloom", toPort: "Clock in", label: "Master clock to sequencer" },
+    { id: "c2", num: 2, type: "pitch", from: "bloom", fromPort: "Note 1",      to: "sto",   toPort: "1V/Oct",   label: "Sequenced pitch to oscillator" },
+    { id: "c3", num: 3, type: "audio", from: "sto",   fromPort: "Complex out", to: "out",   toPort: "L in",     label: "Oscillator to monitor output" },
+  ],
+  tips: [
+    "Adjust Bloom's mutation knob to vary the sequence over time.",
+    "Slow the master clock on Pams Out 1 for spacious phrases.",
+  ],
+}
+
+// ─────────────────────────────────────────────────────────────
+// CONSTANTS + HELPERS
+// ─────────────────────────────────────────────────────────────
+const COLOR = { audio:"#E24A33", cv:"#348ABD", gate:"#52A35F", clock:"#E5AE38", pitch:"#9B59B6" }
+const LABEL = { audio:"Audio", cv:"CV/Mod", gate:"Gate", clock:"Clock", pitch:"V/Oct" }
+const HDR_H = 42, PORT_H = 22, PORT_PAD = 6
+
+function portTop(idx) {
+  return HDR_H + PORT_PAD + idx * PORT_H + PORT_H / 2
+}
+
+// Build port→type map
+const portTypeMap = {}
+PATCH.cables.forEach(c => {
+  portTypeMap[`${c.from}:${c.fromPort}`] = c.type
+  portTypeMap[`${c.to}:${c.toPort}`]     = c.type
+})
+
+// ─────────────────────────────────────────────────────────────
+// CUSTOM NODE
+// ─────────────────────────────────────────────────────────────
+function ModuleNode({ data, selected }) {
+  return html`
+    <div class=${"mod-node" + (selected ? " selected" : "")}>
+      <div class="mod-hdr">
+        <div class="mod-name">${data.name}</div>
+        <div class="mod-mfr">${data.mfr}</div>
+      </div>
+      <div class="mod-ports">
+        <div class="ports-col left">
+          ${data.inputs.map((port, i) => {
+            const ptype = portTypeMap[`${data.id}:${port}`]
+            const dotColor = ptype ? COLOR[ptype] : '#94a3b8'
+            return html`
+              <div class="port-row" key=${port}>
+                <${Handle} type="target" id=${port} position=${Position.Left}
+                  style=${{ top: portTop(i), background: dotColor }} />
+                <span class="port-lbl">${port}</span>
+              </div>`
+          })}
+        </div>
+        <div class="ports-col right">
+          ${data.outputs.map((port, i) => {
+            const ptype = portTypeMap[`${data.id}:${port}`]
+            const dotColor = ptype ? COLOR[ptype] : '#94a3b8'
+            return html`
+              <div class="port-row right" key=${port}>
+                <span class="port-lbl">${port}</span>
+                <${Handle} type="source" id=${port} position=${Position.Right}
+                  style=${{ top: portTop(i), background: dotColor }} />
+              </div>`
+          })}
+        </div>
+      </div>
+    </div>`
+}
+
+const nodeTypes = { module: ModuleNode }
+
+// ─────────────────────────────────────────────────────────────
+// ELK LAYOUT — node sizing + graph definition
+// ─────────────────────────────────────────────────────────────
+const NODE_W = 180
+function nodeHeight(m) {
+  const maxRows = Math.max(m.inputs.length, m.outputs.length)
+  return HDR_H + PORT_PAD * 2 + maxRows * PORT_H
+}
+
+const elkGraph = {
+  id: 'root',
+  layoutOptions: {
+    'elk.algorithm': 'layered',
+    'elk.direction': 'RIGHT',
+    'elk.edgeRouting': 'ORTHOGONAL',
+    'elk.layered.spacing.nodeNodeBetweenLayers': '110',
+    'elk.spacing.nodeNode': '70',
+    'elk.spacing.edgeNode': '40',
+    'elk.spacing.edgeEdge': '25',
+    'elk.layered.spacing.edgeNodeBetweenLayers': '40',
+    'elk.portConstraints': 'FIXED_POS',
+  },
+  children: PATCH.modules.map(m => ({
+    id: m.id,
+    width: NODE_W,
+    height: nodeHeight(m),
+    ports: [
+      ...m.inputs.map((p, i) => ({
+        id: `${m.id}.${p}`, x: 0, y: portTop(i),
+        width: 1, height: 1,
+        layoutOptions: { 'port.side': 'WEST' },
+      })),
+      ...m.outputs.map((p, i) => ({
+        id: `${m.id}.${p}`, x: NODE_W, y: portTop(i),
+        width: 1, height: 1,
+        layoutOptions: { 'port.side': 'EAST' },
+      })),
+    ],
+  })),
+  edges: PATCH.cables.map(c => ({
+    id: c.id,
+    sources: [`${c.from}.${c.fromPort}`],
+    targets: [`${c.to}.${c.toPort}`],
+  })),
+}
+
+// ─────────────────────────────────────────────────────────────
+// CUSTOM EDGE — draws ELK's orthogonal route, falls back to L-path on drag.
+// Renders a small cable-number badge at the path midpoint.
+// ─────────────────────────────────────────────────────────────
+function pathPoints({ sections, sourceX, sourceY, targetX, targetY, isBack, yBelow }) {
+  // Back-edge: hand-route under the row from labeled source port to labeled target port.
+  if (isBack && yBelow != null) {
+    const PAD = 24
+    return [
+      { x: sourceX,        y: sourceY },
+      { x: sourceX + PAD,  y: sourceY },
+      { x: sourceX + PAD,  y: yBelow },
+      { x: targetX - PAD,  y: yBelow },
+      { x: targetX - PAD,  y: targetY },
+      { x: targetX,        y: targetY },
+    ]
+  }
+  // Forward: trust ELK's orthogonal route if its endpoints still match the live handle positions.
+  if (sections?.length) {
+    const s = sections[0]
+    const matches = (a, b) => Math.abs(a.x - b.x) < 1 && Math.abs(a.y - b.y) < 1
+    if (matches(s.startPoint, { x: sourceX, y: sourceY }) &&
+        matches(s.endPoint,   { x: targetX, y: targetY })) {
+      return [s.startPoint, ...(s.bendPoints || []), s.endPoint]
+    }
+  }
+  // Fallback (drag): simple L-shape.
+  const midX = (sourceX + targetX) / 2
+  return [
+    { x: sourceX, y: sourceY },
+    { x: midX,    y: sourceY },
+    { x: midX,    y: targetY },
+    { x: targetX, y: targetY },
+  ]
+}
+
+function midpointAlong(points) {
+  let total = 0
+  const lens = []
+  for (let i = 0; i < points.length - 1; i++) {
+    const dx = points[i+1].x - points[i].x
+    const dy = points[i+1].y - points[i].y
+    const l = Math.hypot(dx, dy)
+    lens.push(l); total += l
+  }
+  let target = total / 2
+  for (let i = 0; i < lens.length; i++) {
+    if (target <= lens[i]) {
+      const t = lens[i] === 0 ? 0 : target / lens[i]
+      return {
+        x: points[i].x + (points[i+1].x - points[i].x) * t,
+        y: points[i].y + (points[i+1].y - points[i].y) * t,
+      }
+    }
+    target -= lens[i]
+  }
+  return points[points.length - 1]
+}
+
+// Badge anchor: prefer the midpoint of the longest *horizontal* segment.
+// For parallel cables sharing a vertical channel, the horizontal stubs are
+// at distinct port-y values, so badges naturally separate by row instead of
+// stacking on the shared column.
+function badgeAnchor(points) {
+  let bestIdx = -1, bestLen = 0
+  for (let i = 0; i < points.length - 1; i++) {
+    const dx = points[i+1].x - points[i].x
+    const dy = points[i+1].y - points[i].y
+    if (Math.abs(dy) < 0.5) {
+      const len = Math.abs(dx)
+      if (len > bestLen) { bestLen = len; bestIdx = i }
+    }
+  }
+  if (bestIdx >= 0 && bestLen >= 18) {
+    return {
+      x: (points[bestIdx].x + points[bestIdx+1].x) / 2,
+      y: points[bestIdx].y,
+    }
+  }
+  return midpointAlong(points)
+}
+
+function ElkEdge({ id, data, style, markerEnd, sourceX, sourceY, targetX, targetY }) {
+  const points = pathPoints({
+    sections: data?.sections,
+    sourceX, sourceY, targetX, targetY,
+    isBack: data?.isBack, yBelow: data?.yBelow,
+  })
+  const path = points.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ')
+  const mid = badgeAnchor(points)
+  const stroke = style?.stroke || '#888'
+  const opacity = style?.opacity ?? 1
+  return html`<${React.Fragment}>
+    <${BaseEdge} id=${id} path=${path} style=${style} markerEnd=${markerEnd} />
+    <g transform=${`translate(${mid.x}, ${mid.y})`}
+       style=${{ pointerEvents: 'none', opacity, transition: 'opacity 0.12s' }}>
+      <circle r="9" fill="white" stroke=${stroke} strokeWidth="1.5" />
+      <text textAnchor="middle" dominantBaseline="central"
+            fontSize="9" fontWeight="700" fill="#222">${data.num}</text>
+    </g>
+  </${React.Fragment}>`
+}
+
+const edgeTypes = { elk: ElkEdge }
+
+
+// ─────────────────────────────────────────────────────────────
+// CONTROLS + PANEL (vanilla JS, outside React)
+// ─────────────────────────────────────────────────────────────
+// Buttons communicate to React via a simple pub/sub — no external state lib needed.
+
+const panel     = document.getElementById('mod-panel')
+const panelName = document.getElementById('pn-name')
+const panelMfr  = document.getElementById('pn-mfr')
+const panelBody = document.getElementById('pn-body')
+
+function openPanel(mod) {
+  panelName.textContent = mod.name
+  panelMfr.textContent  = mod.mfr
+  panelBody.innerHTML   = ''
+
+  const sh = document.createElement('div'); sh.className = 'p-section'; sh.textContent = 'Settings (this patch)'; panelBody.appendChild(sh)
+  mod.settings.forEach(s => {
+    const row = document.createElement('div'); row.className = 'p-row'
+    row.innerHTML = `<span class="k">${s.k}</span><span class="v">${s.v}</span>`
+    panelBody.appendChild(row)
+  })
+
+  const cables = PATCH.cables.filter(c => c.from===mod.id || c.to===mod.id)
+  if (cables.length) {
+    const ch = document.createElement('div'); ch.className = 'p-section'; ch.textContent = 'Connections'; panelBody.appendChild(ch)
+    const box = document.createElement('div'); box.className = 'p-cables'
+    cables.forEach(c => {
+      const isOut = c.from === mod.id
+      const row = document.createElement('div'); row.className = 'p-cable'
+      row.innerHTML = `<div class="cdot" style="background:${COLOR[c.type]}"></div>
+        <div><strong>${isOut?'→':'←'} ${isOut?c.to:c.from}</strong><br>
+        <span style="font-size:0.73rem;color:#777">${isOut?c.fromPort:c.toPort} · ${LABEL[c.type]}</span></div>`
+      box.appendChild(row)
+    })
+    panelBody.appendChild(box)
+  }
+  panel.classList.add('open')
+}
+
+function closePanel() { panel.classList.remove('open') }
+document.getElementById('pn-close').addEventListener('click', closePanel)
+
+// Type filter — communicate to React via custom events
+// Re-implement: we expose the setHiddenTypes setter via a global.
+// Hack: re-render root with updated props by updating a module-level variable.
+// Cleanest standalone approach: use a simple pub/sub.
+
+const _listeners = []
+function subscribe(fn) { _listeners.push(fn) }
+function publish(state) { _listeners.forEach(fn => fn(state)) }
+
+let _hiddenTypes = new Set()
+let _animating   = false
+
+const moduleById = Object.fromEntries(PATCH.modules.map(m => [m.id, m]))
+const cableById  = Object.fromEntries(PATCH.cables.map(c => [c.id, c]))
+
+function Flow({ layout }) {
+  const [hiddenTypes, setHiddenTypes] = useState(_hiddenTypes)
+  const [animating, setAnimating]     = useState(_animating)
+  const [hoveredId, setHoveredId]     = useState(null)
+  const rf = useReactFlow()
+
+  useEffect(() => {
+    subscribe(({hiddenTypes: ht, animating: an, hoveredId: hi}) => {
+      if (ht !== undefined) setHiddenTypes(new Set(ht))
+      if (an !== undefined) setAnimating(an)
+      if (hi !== undefined) setHoveredId(hi)
+    })
+  }, [])
+
+  const initialNodes = useMemo(() =>
+    layout.children.map(c => ({
+      id: c.id, type: 'module',
+      position: { x: c.x, y: c.y },
+      data: moduleById[c.id],
+    })), [layout])
+
+  const [nodes,, onNodesChange] = useNodesState(initialNodes)
+
+  // Layout-derived: which edges visually U-turn (target node sits left of source),
+  // and the Y-coordinate of a clear lane below the lowest node row.
+  const backIds = useMemo(() => {
+    const pos = Object.fromEntries(layout.children.map(c => [c.id, c]))
+    const set = new Set()
+    layout.edges.forEach(e => {
+      const c = cableById[e.id]
+      const s = pos[c.from], t = pos[c.to]
+      if (s && t && t.x < s.x) set.add(c.id)
+    })
+    return set
+  }, [layout])
+
+  const yBelow = useMemo(() =>
+    Math.max(...layout.children.map(c => c.y + c.height)) + 60,
+    [layout])
+
+  const edges = useMemo(() =>
+    layout.edges.map(e => {
+      const c = cableById[e.id]
+      const isHovered = hoveredId === c.id
+      const dimmed    = hoveredId !== null && !isHovered
+      const baseW = animating ? 2.5 : 2
+      return {
+        id: c.id,
+        source: c.from, sourceHandle: c.fromPort,
+        target: c.to,   targetHandle: c.toPort,
+        type: 'elk',
+        hidden: hiddenTypes.has(c.type),
+        animated: animating,
+        zIndex: isHovered ? 1000 : 0,
+        style: {
+          stroke: COLOR[c.type],
+          strokeWidth: isHovered ? 4 : baseW,
+          opacity: dimmed ? 0.18 : 1,
+          transition: 'stroke-width 0.12s, opacity 0.12s',
+        },
+        markerEnd: { type: MarkerType.ArrowClosed, color: COLOR[c.type], width: 14, height: 10 },
+        data: { ...c, sections: e.sections, isBack: backIds.has(c.id), yBelow },
+      }
+    }), [layout, hiddenTypes, animating, hoveredId, backIds, yBelow])
+
+  useEffect(() => {
+    requestAnimationFrame(() => rf.fitView({ padding: 0.08 }))
+  }, [layout, rf])
+
+  const onEdgeMouseEnter = useCallback((_, edge) => {
+    publish({ hoveredId: edge.id })
+    const c = edge.data
+    const tip = document.getElementById('edge-tip')
+    document.getElementById('tip-type').textContent  = LABEL[c.type]
+    document.getElementById('tip-type').style.color  = COLOR[c.type]
+    document.getElementById('tip-route').textContent = `${c.from} → ${c.to}`
+    document.getElementById('tip-ports').textContent = `${c.fromPort} → ${c.toPort}`
+    document.getElementById('tip-note').textContent  = c.label
+    tip.classList.add('show')
+  }, [])
+
+  const onEdgeMouseLeave = useCallback(() => {
+    publish({ hoveredId: null })
+    document.getElementById('edge-tip').classList.remove('show')
+  }, [])
+
+  const onEdgeMouseMove = useCallback((e) => {
+    const tip = document.getElementById('edge-tip')
+    tip.style.left = Math.min(e.clientX+14, window.innerWidth-300)+'px'
+    tip.style.top  = Math.min(e.clientY+14, window.innerHeight-130)+'px'
+  }, [])
+
+  return html`
+    <${ReactFlow}
+      nodes=${nodes}
+      edges=${edges}
+      nodeTypes=${nodeTypes}
+      edgeTypes=${edgeTypes}
+      onNodesChange=${onNodesChange}
+      onEdgeMouseEnter=${onEdgeMouseEnter}
+      onEdgeMouseLeave=${onEdgeMouseLeave}
+      onEdgeMouseMove=${onEdgeMouseMove}
+      onNodeClick=${(_, node) => openPanel(node.data)}
+      onPaneClick=${closePanel}
+      fitView
+      fitViewOptions=${{ padding: 0.08 }}
+      minZoom=${0.2}
+    >
+      <${Background} variant="dots" gap=${20} color="#b8c4d4" size=${1.2} />
+      <${Controls} />
+      <${MiniMap} nodeStrokeWidth=${3} zoomable pannable />
+    </${ReactFlow}>`
+}
+
+function App() {
+  const [layout, setLayout] = useState(null)
+
+  useEffect(() => {
+    const elk = new ELK()
+    elk.layout(elkGraph).then(setLayout).catch(err => {
+      console.error('ELK layout failed:', err)
+    })
+  }, [])
+
+  if (!layout) {
+    return html`<div style=${{padding:'24px', color:'#666', fontSize:'0.9rem'}}>Computing layout…</div>`
+  }
+
+  return html`<${ReactFlowProvider}><${Flow} layout=${layout} /></${ReactFlowProvider}>`
+}
+
+createRoot(document.getElementById('rf-root')).render(html`<${App} />`)
+
+// Type filter buttons
+document.querySelectorAll('.type-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const t = btn.dataset.type
+    _hiddenTypes.has(t) ? (_hiddenTypes.delete(t), btn.classList.add('active'))
+                        : (_hiddenTypes.add(t),    btn.classList.remove('active'))
+    publish({ hiddenTypes: _hiddenTypes })
+  })
+})
+
+// Animate button
+document.getElementById('anim-btn').addEventListener('click', function() {
+  _animating = !_animating
+  this.classList.toggle('active', _animating)
+  this.textContent = _animating ? '⏸ Animate' : '▶ Animate'
+  publish({ animating: _animating })
+})
+
+// Tips list
+const tipsList = document.getElementById('tips-list')
+PATCH.tips.forEach(t => { const li = document.createElement('li'); li.textContent = t; tipsList.appendChild(li) })
+
+// Cable table — rows are bound bidirectionally with edge hover state via the pub/sub.
+const tbody = document.getElementById('cable-tbody')
+const rowByCable = {}
+const groups = {}
+PATCH.cables.forEach(c => { (groups[c.type] = groups[c.type]||[]).push(c) })
+Object.entries(groups).forEach(([type, cables]) => {
+  const hdr = document.createElement('tr'); hdr.classList.add('csec')
+  hdr.innerHTML = `<td colspan="7">${LABEL[type]}</td>`; tbody.appendChild(hdr)
+  cables.forEach(c => {
+    const tr = document.createElement('tr')
+    tr.classList.add('cable-row')
+    tr.dataset.cableId = c.id
+    tr.innerHTML = `<td class="cn">${c.num}</td><td>${c.from}</td><td>${c.fromPort}</td><td>${c.to}</td><td>${c.toPort}</td><td><span class="sig ${type}">${LABEL[type]}</span></td><td>${c.label}</td>`
+    tr.addEventListener('mouseenter', () => publish({ hoveredId: c.id }))
+    tr.addEventListener('mouseleave', () => publish({ hoveredId: null }))
+    tbody.appendChild(tr)
+    rowByCable[c.id] = tr
+  })
+})
+
+// Mirror hovered edge → table row highlight.
+subscribe(({ hoveredId: hi }) => {
+  if (hi === undefined) return
+  Object.values(rowByCable).forEach(tr => tr.classList.remove('hover-edge'))
+  if (hi && rowByCable[hi]) rowByCable[hi].classList.add('hover-edge')
+})
+</script>
+</body>
+</html>

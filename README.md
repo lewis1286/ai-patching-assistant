@@ -34,11 +34,9 @@ ai-patching-assistant/
 │   └── experimental/
 │
 └── templates/
-    ├── patch-template.md               ← Markdown documentation template
-    ├── patch-interactive-reference.html ← Interactive HTML reference template
-    └── miro/
-        ├── symbol-mapping.md           ← Module → SVG symbol mapping
-        └── symbols/SVG/                ← Patch & Tweak symbol set (92 symbols)
+    ├── patch-template.md          ← Markdown documentation template
+    ├── patch-rf-reference.html    ← Canonical interactive HTML template (React Flow + ELK)
+    └── miro/symbols/SVG/          ← Patch & Tweak symbol set, kept for reference
 ```
 
 ## Usage

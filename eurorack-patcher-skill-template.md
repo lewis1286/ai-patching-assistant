@@ -29,12 +29,9 @@ You are an expert in designing eurorack patches using the user's specific module
 
 **Templates**: `/workspaces/code/personal_projects/ai-patching-assistant/templates/`
 - `patch-template.md` — Markdown documentation template
-- `patch-interactive-reference.html` — **Interactive HTML reference** — read this before generating any HTML output
+- `patch-rf-reference.html` — **Canonical interactive HTML template** (React Flow + ELK auto-layout). Copy this for every new patch and replace only the `PATCH = {...}` data block + the header metadata. Read it before generating any HTML output — the schema is documented in the comment at the top of the file.
 
-**Signal Flow Symbol Resources**:
-`/workspaces/code/personal_projects/ai-patching-assistant/templates/miro/`
-- `symbol-mapping.md` — Maps modules to SVG symbol files
-- `symbols/SVG/` — Patch & Tweak symbol set (CC BY-ND 4.0)
+**Working complex example**: `patches/experimental/house-room-rf.html` — full House Room patch (16 modules, 36 cables) using the same template. Reference when in doubt about how to structure a richer patch.
 
 **PDF Manuals**: Not configured on this machine. Skip manual lookups; use known specifications from the inventory and general module knowledge.
 
@@ -214,45 +211,58 @@ End with a **Cable Summary** table showing total cable count.
 
 **IMPORTANT**: Every complete patch design or documented patch MUST produce two files:
 1. A `.md` markdown file (using `patch-template.md` as the base)
-2. An `.html` interactive file
+2. An `.html` interactive file (using `patch-rf-reference.html` as the base)
 
-### Before Generating HTML
+### How to generate the HTML
 
-**Always read** `templates/patch-interactive-reference.html` first. This is the canonical structure — use it exactly. Do not invent a different structure.
+1. **Read** `templates/patch-rf-reference.html` first to confirm the current schema (it's documented in the top comment).
+2. **Copy** the file to `patches/<category>/<patch-name>.html`.
+3. **Edit only two regions**:
+   - The header HTML (`<title>`, `<h1 id="ph-title">`, the four `.patch-meta` spans)
+   - The `PATCH = { ... }` object in the script block
+4. **Leave everything else untouched** — CSS, ELK setup, custom edge component, Flow component, controls, hover sync, table rendering. That code is shared infrastructure and changing it per-patch creates drift.
 
-### HTML Generation Rules
+### PATCH data schema
 
-1. **One self-contained file** — no external dependencies, no CDN links, no separate JS/CSS files.
+| Field | Type | Notes |
+|---|---|---|
+| `title` | string | Display title shown in the canvas header |
+| `category` | string | Sequences \| Drones \| Percussion \| Effects \| Experimental |
+| `complexity` | string | Simple \| Medium \| Complex |
+| `voices` | string | Free text describing voicing (e.g. `"3 melodic + 4-ch drums"`) |
+| `date` | string | YYYY-MM-DD |
+| `modules[]` | array | One entry per module used in the patch |
+| `modules[].id` | string | Unique short slug — referenced by cables |
+| `modules[].name` | string | Display name in the node header |
+| `modules[].mfr` | string | Manufacturer (smaller text under name) |
+| `modules[].inputs[]` | string[] | Jack names rendered on the **left** side |
+| `modules[].outputs[]` | string[] | Jack names rendered on the **right** side |
+| `modules[].settings[]` | `{k,v}[]` | Knob/value pairs shown in the side panel |
+| `cables[]` | array | One entry per physical cable |
+| `cables[].id` | string | Unique slug (e.g. `"c1"`) |
+| `cables[].num` | int | Cable number — appears as a badge on the edge |
+| `cables[].type` | string | `audio` \| `cv` \| `gate` \| `clock` \| `pitch` |
+| `cables[].from` / `to` | string | Module ids |
+| `cables[].fromPort` / `toPort` | string | Must exactly match a string in the source's `outputs[]` / target's `inputs[]` |
+| `cables[].label` | string | Short tooltip description |
+| `tips[]` | string[] | Performance / variation suggestions shown below the canvas |
 
-2. **File location**: Same directory as the `.md` file.
-   - `patches/sequences/my-patch.html`
+### What the engine handles automatically
 
-3. **PATCH data object**: Fill in all fields from the patch design:
-   - `title`, `category`, `complexity`, `voices`, `date`
-   - `viewBox` — set wide enough for all module positions + 40px padding
-   - `symbols[]` — embed only modules used in this patch
-   - `modules[]` — x/y positions (center of 60×60 icon), settings array
-   - `cables[]` — path `d` attribute as cubic bezier, plus all metadata
-   - `tips[]`
+You do **not** write any of this — it's all derived from the data above:
 
-4. **SVG Symbol embedding**: For each module in the patch:
-   - Read its SVG file from `templates/miro/symbols/SVG/` (use `symbol-mapping.md` to find the right file)
-   - Strip the outer `<svg>` wrapper
-   - Prefix **all** CSS class names with the module id (e.g., `.cls-1` → `.polaris-cls-1`)
-   - Update all `class="..."` attributes inside to match the prefixed names
-   - Wrap in `<symbol id="sym-MODULEID" viewBox="...">...</symbol>` format
+- Node positions (ELK auto-layout, left-to-right)
+- Edge routing (orthogonal, around obstacles)
+- Back-edges (cables where target sits left of source) routed under the row to keep cables visibly connected to labeled jacks
+- Cable number badges placed on each edge's longest horizontal segment
+- Hover highlight: hovered edge thickens, others dim, table row lights up
+- Bidirectional table↔canvas hover sync
+- Type filter buttons (audio / CV / gate / clock / V-Oct), animation toggle, side panel on node click
 
-5. **Module positioning**: Use a consistent layout:
-   - **Main signal chain** (left to right): x starts at 70, increment ~150px, y = 110
-   - **Modulation sources** (below): y = 280
-   - **Canvas**: viewBox = `"0 0 W 400"` where W = last module x + 80 + 40
+### Constraints that still apply
 
-6. **Cable paths**: Use cubic bezier curves (`C` command):
-   - Horizontal connections in main row: `M x1,y C midx,y midx,y x2,y`
-   - Vertical drops to modulation row: `M x,y1 C x,mid x,mid x,y2`
-   - Diagonal mod-to-main: arc gently upward to the destination
-
-7. **Signal type colors** (must be consistent):
+1. **Self-contained file** — uses CDN imports for React, React Flow, htm, and elkjs. No project-local JS/CSS dependencies.
+2. **Signal type colors** are fixed and must not be changed in CSS:
    | Type  | Color   |
    |-------|---------|
    | Audio | #E24A33 |
@@ -260,11 +270,8 @@ End with a **Cable Summary** table showing total cable count.
    | Gate  | #52A35F |
    | Clock | #E5AE38 |
    | V/Oct | #9B59B6 |
-
-8. **Attribution**: Footer must include:
-   `Patch Symbols from PATCH & TWEAK by Kim Bjørn and Chris Meyer, published by Bjooks (CC BY-ND 4.0)`
-
-9. **Notify the user**: After creating both files, show the paths.
+3. **Module ids in cables must match modules[]** — typos here mean dangling edges. Double-check.
+4. **Notify the user** after creating both files — show the paths.
 
 ### Example Workflow
 
@@ -274,12 +281,10 @@ Assistant: [Listens to full description]
            [Asks follow-up: "Which STO output are you using?" etc.]
            [Shows cable table for confirmation]
            [User: "yes that's right"]
-           [Reads modules/inventory.md]
-           [Reads symbol-mapping.md]
-           [Reads patch-interactive-reference.html for structure]
-           [Reads required SVG symbol files]
+           [Reads modules/inventory.md to verify modules]
+           [Reads templates/patch-rf-reference.html for the canonical schema]
            [Saves patches/sequences/patch-name.md]
-           [Saves patches/sequences/patch-name.html]
+           [Copies the canonical template, edits header HTML + PATCH data, saves patches/sequences/patch-name.html]
            [Tells user: "Saved to patches/sequences/patch-name.html — open in a browser to view"]
 ```
 

@@ -14,11 +14,11 @@ The owner patches a single Tiptop Audio Mantis case (104HP × 2 rows, 19 modules
 |------|------|
 | `eurorack-patcher-skill-template.md` | The Claude Code skill definition — invoke this when working on patches |
 | `modules/inventory.md` | **Source of truth** for all available modules. Read this first before any patch work. Never guess what modules exist. |
-| `templates/patch-interactive-reference.html` | **Canonical HTML template** — read before generating any interactive patch HTML. Contains the full PATCH data schema, rendering engine, and all interactive JS. |
-| `templates/miro/symbol-mapping.md` | Maps each physical module to its Patch & Tweak SVG symbol file |
-| `templates/miro/symbols/SVG/` | 92 SVG module symbols (Patch & Tweak, CC BY-ND 4.0) |
+| `templates/patch-rf-reference.html` | **Canonical HTML template** (React Flow + ELK auto-layout). Copy this for every new patch and replace only the header metadata + `PATCH = {...}` data object. Schema is documented in the comment at the top of the file. |
+| `patches/experimental/house-room-rf.html` | Working complex example using the same template (16 modules, 36 cables) — reference when designing richer patches. |
 | `templates/patch-template.md` | Markdown documentation template |
 | `templates/astro-patch-page.astro` | Astro page scaffolding for site integration (adapt to match existing viz pages) |
+| `templates/miro/symbols/SVG/` | 92 Patch & Tweak SVG symbols (CC BY-ND 4.0) — left over from the retired SVG-illustration approach. Not used by the current React Flow template; kept in case needed for other diagrams. |
 
 ---
 
@@ -26,7 +26,7 @@ The owner patches a single Tiptop Audio Mantis case (104HP × 2 rows, 19 modules
 
 Every complete patch generates two files in `patches/[category]/`:
 - `patch-name.md` — markdown documentation with cable table
-- `patch-name.html` — standalone interactive HTML (no server needed, no external deps)
+- `patch-name.html` — interactive HTML built from `patch-rf-reference.html`
 
 The `.svg` files in `patches/sequences/` are from an earlier workflow and kept for reference.
 
@@ -34,11 +34,12 @@ The `.svg` files in `patches/sequences/` are from an earlier workflow and kept f
 
 ## HTML Generation Rules (critical)
 
-1. Always read `templates/patch-interactive-reference.html` before generating HTML — don't invent the structure from scratch.
-2. Embed only the SVG symbols used in the patch. Prefix all CSS class names with the module id to avoid conflicts (`.cls-1` → `.polaris-cls-1`).
-3. SVG symbols must be embedded **unmodified** — CC BY-ND 4.0 forbids derivatives. Attribution footer is required.
-4. The file must be fully self-contained — no external URLs, no CDN links.
-5. Signal type colors are fixed: audio `#E24A33`, CV `#348ABD`, gate `#52A35F`, clock `#E5AE38`, V/Oct `#9B59B6`.
+1. Always read `templates/patch-rf-reference.html` before generating HTML — copy that file rather than inventing structure from scratch.
+2. Edit only two regions per patch: the header HTML (`<title>`, `<h1 id="ph-title">`, the four `.patch-meta` spans) and the `PATCH = {...}` object. Leave the rest of the file untouched.
+3. Layout, edge routing, back-edge handling, and badge placement are all automatic — do **not** write `x/y` positions, bezier paths, or SVG symbols.
+4. Module ids in `cables[]` must exactly match a module in `modules[]`, and `fromPort`/`toPort` must exactly match a string in that module's `outputs[]`/`inputs[]`. Typos cause dangling edges.
+5. The file uses CDN imports for React, React Flow, htm, and elkjs — internet required at first load. Acceptable since these patches end up as Astro pages on the owner's site.
+6. Signal type colors are fixed: audio `#E24A33`, CV `#348ABD`, gate `#52A35F`, clock `#E5AE38`, V/Oct `#9B59B6`.
 
 ---
 
@@ -54,5 +55,5 @@ The `.svg` files in `patches/sequences/` are from an earlier workflow and kept f
 
 - Module inventory is the only source of truth for what's available. If a module isn't listed, don't include it in a patch.
 - Patch HTML files open in a browser directly from the filesystem — no build step.
-- The `templates/patch-interactive-reference.html` rendering engine (JS below the `PATCH` object) is reused verbatim across all patches. Only the `PATCH` data object changes per patch.
+- The `templates/patch-rf-reference.html` rendering engine (everything outside the `PATCH = {...}` object and the header metadata) is reused verbatim across all patches.
 - When documenting an existing patch conversationally: extract structure, ask only for genuinely ambiguous details, confirm the cable table before writing files.
