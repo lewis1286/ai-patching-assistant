@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+<!--
+  House Room v2 — Eurorack Patcher (Node Layout)
+  Port-level connections · auto-routed cables · 16 modules · 36 cables
+-->
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>House Room — Eurorack Patcher</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #f5f5f5; color: #222; min-height: 100vh;
+    }
+    .patch-header { background: #1a1a1a; color: #fff; padding: 18px 24px 14px; }
+    .patch-header h1 { font-size: 1.3rem; font-weight: 600; letter-spacing: -0.01em; }
+    .patch-meta { display: flex; gap: 16px; margin-top: 6px; flex-wrap: wrap; font-size: 0.78rem; color: #aaa; }
+    .badge { display: inline-block; padding: 1px 7px; border-radius: 10px; font-size: 0.72rem; font-weight: 600; background: #333; color: #ccc; }
+    .controls { background: #fff; border-bottom: 1px solid #e0e0e0; padding: 10px 24px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .controls-label { font-size: 0.75rem; color: #888; font-weight: 500; }
+    .type-btn { border: 1.5px solid currentColor; background: transparent; border-radius: 14px; padding: 3px 11px; font-size: 0.75rem; font-weight: 600; cursor: pointer; transition: background 0.15s; }
+    .type-btn[data-type="audio"]  { color: #E24A33; }
+    .type-btn[data-type="cv"]     { color: #348ABD; }
+    .type-btn[data-type="gate"]   { color: #52A35F; }
+    .type-btn[data-type="clock"]  { color: #E5AE38; }
+    .type-btn[data-type="pitch"]  { color: #9B59B6; }
+    .type-btn.active { color: #fff; }
+    .type-btn.active[data-type="audio"]  { background: #E24A33; border-color: #E24A33; }
+    .type-btn.active[data-type="cv"]     { background: #348ABD; border-color: #348ABD; }
+    .type-btn.active[data-type="gate"]   { background: #52A35F; border-color: #52A35F; }
+    .type-btn.active[data-type="clock"]  { background: #E5AE38; border-color: #E5AE38; }
+    .type-btn.active[data-type="pitch"]  { background: #9B59B6; border-color: #9B59B6; }
+    .divider { width: 1px; height: 22px; background: #ddd; margin: 0 4px; }
+    .anim-btn { border: 1.5px solid #bbb; background: transparent; border-radius: 14px; padding: 3px 11px; font-size: 0.75rem; font-weight: 500; cursor: pointer; color: #666; transition: background 0.15s; }
+    .anim-btn.active { background: #1a1a1a; border-color: #1a1a1a; color: #fff; }
+
+    .diagram-wrapper { background: #eef2f7; overflow: auto; }
+    #patch-svg { display: block; }
+
+    /* Node card */
+    .node-card { cursor: pointer; }
+    .node-bg { fill: #fff; stroke: #d1d5db; stroke-width: 1; transition: stroke 0.12s; }
+    .node-card:hover .node-bg { stroke: #818cf8; stroke-width: 1.5; }
+    .node-card.selected .node-bg { fill: #f5f3ff; stroke: #6366f1; stroke-width: 2; }
+    .node-header-fill { fill: #1e293b; }
+    .node-card.selected .node-header-fill { fill: #4338ca; }
+    .node-name { fill: #fff; font-size: 10px; font-weight: 700; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; pointer-events: none; }
+    .node-mfr  { fill: #94a3b8; font-size: 8px; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; pointer-events: none; }
+    .port-label { font-size: 9px; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; fill: #475569; dominant-baseline: middle; pointer-events: none; }
+    .port-label.out { text-anchor: end; }
+    .port-dot { fill: #cbd5e1; stroke: #fff; stroke-width: 1.5; pointer-events: none; }
+    .port-dot.audio { fill: #E24A33; } .port-dot.cv    { fill: #348ABD; }
+    .port-dot.gate  { fill: #52A35F; } .port-dot.clock { fill: #E5AE38; }
+    .port-dot.pitch { fill: #9B59B6; }
+
+    /* Cables */
+    .cable { fill: none; stroke-width: 2; stroke-linecap: round; cursor: pointer; transition: opacity 0.15s; }
+    .cable[data-type="audio"]  { stroke: #E24A33; }
+    .cable[data-type="cv"]     { stroke: #348ABD; }
+    .cable[data-type="gate"]   { stroke: #52A35F; }
+    .cable[data-type="clock"]  { stroke: #E5AE38; }
+    .cable[data-type="pitch"]  { stroke: #9B59B6; }
+    .cable.hovered { stroke-width: 3.5; }
+
+    .cable.animate[data-type="audio"]  { stroke-dasharray: 8 6;  animation: flow-fast  0.5s linear infinite; }
+    .cable.animate[data-type="cv"]     { stroke-dasharray: 10 8; animation: flow-med   1.2s linear infinite; }
+    .cable.animate[data-type="gate"]   { stroke-dasharray: 4 12; animation: flow-slow  1.8s linear infinite; }
+    .cable.animate[data-type="clock"]  { stroke-dasharray: 6 6;  animation: flow-clk   0.8s linear infinite; }
+    .cable.animate[data-type="pitch"]  { stroke-dasharray: 12 4; animation: flow-med   1.4s linear infinite; }
+    @keyframes flow-fast { to { stroke-dashoffset: -28; } }
+    @keyframes flow-med  { to { stroke-dashoffset: -36; } }
+    @keyframes flow-slow { to { stroke-dashoffset: -32; } }
+    @keyframes flow-clk  { to { stroke-dashoffset: -24; } }
+
+    /* Tooltip */
+    #cable-tooltip { position: fixed; background: #1e293b; color: #fff; border-radius: 8px; padding: 9px 13px; font-size: 0.78rem; line-height: 1.5; pointer-events: none; z-index: 100; opacity: 0; transition: opacity 0.12s; max-width: 280px; box-shadow: 0 4px 16px rgba(0,0,0,0.3); }
+    #cable-tooltip.visible { opacity: 1; }
+    .tt-type  { font-size: 0.68rem; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; margin-bottom: 2px; }
+    .tt-route { font-weight: 600; }
+    .tt-ports { color: #94a3b8; font-size: 0.72rem; }
+    .tt-note  { color: #94a3b8; font-size: 0.73rem; margin-top: 3px; }
+
+    /* Panel */
+    #module-panel { position: fixed; top: 0; right: 0; width: 300px; height: 100vh; background: #fff; border-left: 1px solid #e0e0e0; box-shadow: -4px 0 20px rgba(0,0,0,0.1); z-index: 200; transform: translateX(100%); transition: transform 0.22s ease; display: flex; flex-direction: column; overflow-y: auto; }
+    #module-panel.open { transform: translateX(0); }
+    .panel-header { padding: 16px 18px 12px; border-bottom: 1px solid #e8e8e8; display: flex; justify-content: space-between; align-items: flex-start; }
+    .panel-header h2 { font-size: 1rem; font-weight: 600; }
+    .panel-mfr { font-size: 0.75rem; color: #888; margin-top: 2px; }
+    .panel-close { background: none; border: none; cursor: pointer; color: #888; font-size: 1.2rem; padding: 2px 4px; }
+    .panel-close:hover { color: #333; }
+    .panel-body { padding: 14px 18px; }
+    .panel-section-title { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #999; margin: 14px 0 6px; }
+    .panel-setting { display: flex; justify-content: space-between; align-items: baseline; padding: 4px 0; border-bottom: 1px solid #f2f2f2; font-size: 0.83rem; }
+    .panel-setting .key { color: #555; }
+    .panel-setting .val { color: #222; font-weight: 500; text-align: right; max-width: 55%; }
+    .panel-cables { margin-top: 8px; }
+    .panel-cable-row { display: flex; align-items: center; gap: 8px; padding: 5px 0; font-size: 0.78rem; border-bottom: 1px solid #f2f2f2; }
+    .cable-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+
+    /* Below diagram */
+    .patch-content { padding: 24px; max-width: 900px; }
+    details { margin-bottom: 16px; }
+    summary { cursor: pointer; font-size: 0.85rem; font-weight: 600; color: #333; padding: 10px 14px; background: #fff; border: 1px solid #e0e0e0; border-radius: 6px; list-style: none; display: flex; justify-content: space-between; }
+    summary::-webkit-details-marker { display: none; }
+    summary::after { content: "▸"; color: #aaa; }
+    details[open] summary { border-radius: 6px 6px 0 0; }
+    details[open] summary::after { content: "▾"; }
+    .details-body { border: 1px solid #e0e0e0; border-top: none; border-radius: 0 0 6px 6px; background: #fff; padding: 14px; }
+    .tips-list { list-style: none; }
+    .tips-list li { padding: 7px 0; border-bottom: 1px solid #f0f0f0; font-size: 0.85rem; line-height: 1.55; color: #444; }
+    .tips-list li:last-child { border-bottom: none; }
+    .tips-list li::before { content: "→ "; color: #aaa; }
+    .cable-table { width: 100%; border-collapse: collapse; font-size: 0.78rem; }
+    .cable-table th { text-align: left; font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #888; border-bottom: 2px solid #e0e0e0; padding: 6px 8px; }
+    .cable-table td { padding: 5px 8px; border-bottom: 1px solid #f0f0f0; color: #333; }
+    .cable-table tr:hover td { background: #fafafa; }
+    .cable-table .cable-num { color: #bbb; font-weight: 600; }
+    .sig-chip { display: inline-block; padding: 1px 6px; border-radius: 8px; font-size: 0.68rem; font-weight: 700; color: #fff; }
+    .sig-chip.audio { background: #E24A33; } .sig-chip.cv    { background: #348ABD; }
+    .sig-chip.gate  { background: #52A35F; } .sig-chip.clock { background: #E5AE38; color: #333; }
+    .sig-chip.pitch { background: #9B59B6; }
+    .cable-section-head td { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #aaa; padding-top: 12px; padding-bottom: 2px; background: none !important; }
+    .patch-footer { padding: 16px 24px; font-size: 0.72rem; color: #999; border-top: 1px solid #e0e0e0; line-height: 1.6; }
+  </style>
+</head>
+<body>
+
+<header class="patch-header">
+  <h1 id="patch-title">Loading…</h1>
+  <div class="patch-meta">
+    <span><span class="badge" id="patch-category">—</span></span>
+    <span><span class="badge" id="patch-complexity">—</span></span>
+    <span id="patch-voices">—</span>
+    <span id="patch-date">—</span>
+  </div>
+</header>
+
+<div class="controls">
+  <span class="controls-label">Show:</span>
+  <button class="type-btn active" data-type="audio">Audio</button>
+  <button class="type-btn active" data-type="cv">CV</button>
+  <button class="type-btn active" data-type="gate">Gate</button>
+  <button class="type-btn active" data-type="clock">Clock</button>
+  <button class="type-btn active" data-type="pitch">V/Oct</button>
+  <div class="divider"></div>
+  <button class="anim-btn" id="anim-toggle">▶ Animate</button>
+</div>
+
+<div class="diagram-wrapper">
+  <svg id="patch-svg" xmlns="http://www.w3.org/2000/svg">
+    <defs id="svg-defs"></defs>
+    <g id="grid-layer"></g>
+    <g id="cables-layer"></g>
+    <g id="nodes-layer"></g>
+  </svg>
+</div>
+
+<div id="cable-tooltip">
+  <div class="tt-type"  id="tt-type"></div>
+  <div class="tt-route" id="tt-route"></div>
+  <div class="tt-ports" id="tt-ports"></div>
+  <div class="tt-note"  id="tt-note"></div>
+</div>
+
+<div id="module-panel">
+  <div class="panel-header">
+    <div><h2 id="panel-name">Module</h2><div class="panel-mfr" id="panel-mfr"></div></div>
+    <button class="panel-close" id="panel-close">✕</button>
+  </div>
+  <div class="panel-body" id="panel-body"></div>
+</div>
+
+<div class="patch-content">
+  <details>
+    <summary>Performance Tips</summary>
+    <div class="details-body"><ul class="tips-list" id="tips-list"></ul></div>
+  </details>
+  <details>
+    <summary>Full Cable Table</summary>
+    <div class="details-body">
+      <table class="cable-table">
+        <thead><tr><th>#</th><th>From</th><th>Jack</th><th>To</th><th>Jack</th><th>Type</th><th>Notes</th></tr></thead>
+        <tbody id="cable-tbody"></tbody>
+      </table>
+    </div>
+  </details>
+</div>
+
+<footer class="patch-footer">
+  Generated by Claude Code with eurorack-patcher skill
+</footer>
+
+<script>
+// ─────────────────────────────────────────────────────────────
+// PATCH DATA — replace this object for a new patch
+// ─────────────────────────────────────────────────────────────
+const PATCH = {
+  title: "House Room", category: "Experimental", complexity: "Complex",
+  voices: "3 melodic + 4-ch drums", date: "2026-04-29",
+  modules: [
+    // ── Row 0: main audio/clock chain (y=40) ─────────────────
+    { id:"pams", name:"Pamela's PRO Workout", mfr:"ALM Busy Circuits", x:20, y:40,
+      inputs:[], outputs:["Out 1","Out 2","Out 3","Out 5","Out 6","Out 7","Out 8"],
+      settings:[{key:"Out 1",val:"Master clock ÷1 → Bloom"},{key:"Out 2",val:"÷4/÷8 → MFX clock + Beads seed"},{key:"Out 3",val:"Euclidean gate → Daisy buffer swap"},{key:"Out 5",val:"÷1 kick (four-on-the-floor)"},{key:"Out 6",val:"÷2 offset snare (2 and 4)"},{key:"Out 7",val:"÷2 or ÷4 closed hat"},{key:"Out 8",val:"Euclidean open hat"}] },
+    { id:"bloom", name:"Bloom V2", mfr:"Qu-Bit Electronix", x:220, y:40,
+      inputs:["Clock in"], outputs:["Note 1","Note 2","Note 3","Gate 3"],
+      settings:[{key:"Note 1 → STO",val:"Bass/lead pitch"},{key:"Note 2 → Beads",val:"Granular pitch"},{key:"Note 3 → Plaits",val:"Harmonic pitch"},{key:"Gate 3 → Plaits",val:"Triggers LPG"},{key:"Scale",val:"Minor or Dorian"},{key:"Mutation",val:"0 → increase slowly"}] },
+    { id:"sto", name:"STO", mfr:"Make Noise", x:420, y:40,
+      inputs:["1V/Oct"], outputs:["Complex out","Sub out"],
+      settings:[{key:"Frequency",val:"C2–C3 range"},{key:"Complex out",val:"→ Polaris (filtered voice)"},{key:"Sub out",val:"→ Quad VCA ch2 (sub)"}] },
+    { id:"polaris", name:"Polaris", mfr:"Intellijel", x:620, y:40,
+      inputs:["In","FM2 in"], outputs:["LP out"],
+      settings:[{key:"Mode",val:"LP"},{key:"Cutoff",val:"~40–50% (main perf control)"},{key:"Resonance",val:"~15–25%"},{key:"FM2 attn",val:"~40–60% (Zadar C)"}] },
+    { id:"quadvca", name:"Quad VCA", mfr:"Intellijel", x:820, y:40,
+      inputs:["In 1","In 2","In 3","In 4","CV in 1"], outputs:["Mix out"],
+      settings:[{key:"Ch1 (Polaris LP)",val:"Exp, sidechain via Maths"},{key:"Ch2 (STO sub)",val:"Lin, ~50%"},{key:"Ch3 (Mega Milton)",val:"Lin, ~70%"},{key:"Ch4 (Disting EX)",val:"Start at 0, fade in slowly"}] },
+    { id:"megamilton-mult", name:"Mega Milton (Mult)", mfr:"ALM Busy Circuits", x:1040, y:40,
+      inputs:["Buff in"], outputs:["Buff out 2","Buff out 3"],
+      settings:[{key:"Buff in",val:"Quad VCA mix out"},{key:"Buff out 2",val:"→ MFX in L"},{key:"Buff out 3",val:"→ MFX in R"}] },
+    { id:"mfx", name:"MFX", mfr:"ALM Busy Circuits", x:1240, y:40,
+      inputs:["In L","In R","Clock in","CV in 1"], outputs:["Out L","Out R"],
+      settings:[{key:"Algorithm",val:"Reverb / hall"},{key:"Clock in",val:"Pams out 2 (synced time)"},{key:"CV in 1",val:"Zadar D (depth/time sweep)"}] },
+    { id:"beads", name:"Beads", mfr:"Mutable Instruments", x:1460, y:40,
+      inputs:["In L","In R","Pitch in","Seed in"], outputs:["L out","R out"],
+      settings:[{key:"Seed in",val:"Pams out 2 (periodic freeze)"},{key:"Pitch in",val:"Bloom note 2"},{key:"Density",val:"Start sparse, increase over time"}] },
+    { id:"arcusbuffmult", name:"Arcus Buff Mult", mfr:"Arcus Audio", x:1680, y:40,
+      inputs:["In 1","In 2"], outputs:["1a out","1b out","2a out"],
+      settings:[{key:"In 1 (Beads L)",val:"1a → Listen IO L, 1b → Daisy"},{key:"In 2 (Beads R)",val:"2a → Listen IO R"}] },
+    { id:"listonio", name:"Listen IO", mfr:"4ms Company", x:1900, y:40,
+      inputs:["L in","R in"], outputs:[],
+      settings:[{key:"L in",val:"Arcus buff mult 1a"},{key:"R in",val:"Arcus buff mult 2a"},{key:"Output",val:"To monitors / DAW"}] },
+    // ── Row 1: drums + modulation (y=310) ───────────────────
+    { id:"zadar", name:"Zadar", mfr:"Xaoc Devices", x:220, y:310,
+      inputs:[], outputs:["Out A","Out C","Out D"],
+      settings:[{key:"Out A",val:"Snare pitch CV (short AD)"},{key:"Out C",val:"Polaris FM envelope (med AD)"},{key:"Out D",val:"MFX CV sweep (slow/looping)"}] },
+    { id:"plaits", name:"Plaits", mfr:"CalSynth (Pleiades)", x:420, y:310,
+      inputs:["1V/Oct","Trig"], outputs:["Out"],
+      settings:[{key:"Engine",val:"Harmonic oscillator"},{key:"Harmonics",val:"~50% for chord texture"}] },
+    { id:"squid", name:"Squid Salmple", mfr:"ALM Busy Circuits", x:640, y:310,
+      inputs:["Trig 1","Trig 2","Trig 3","Trig 4","CV in 1"], outputs:["1+2 out","Mix out"],
+      settings:[{key:"Ch1",val:"Kick drum (Pams out 5)"},{key:"Ch2",val:"Snare (Pams out 6, Zadar A pitch)"},{key:"Ch3",val:"Closed hat (Pams out 7)"},{key:"Ch4",val:"Open hat (Pams out 8)"},{key:"1+2 out",val:"Pre-fader kick+snare"},{key:"Mix out",val:"Carries ch3+4 only (hats)"}] },
+    { id:"megamilton-mixer", name:"Mega Milton (Mixer)", mfr:"ALM Busy Circuits", x:880, y:310,
+      inputs:["Mixer in 1","Mixer in 2","Mixer in 3"], outputs:["Mixer out"],
+      settings:[{key:"Inputs",val:"Plaits + Squid 1+2 + Squid mix"},{key:"Mixer out",val:"→ Quad VCA ch3"}] },
+    { id:"disting", name:"Disting EX", mfr:"Expert Sleepers", x:1100, y:310,
+      inputs:["In 1"], outputs:["Out 1"],
+      settings:[{key:"Algorithm",val:"Convolver"},{key:"Input 1",val:"Daisy Patch out 1 (degraded audio)"},{key:"IR",val:"Room or hall impulse response"}] },
+    { id:"daisypatch", name:"Daisy Patch", mfr:"Electrosmith", x:1460, y:310,
+      inputs:["Gate in 1","In 1"], outputs:["Out 1"],
+      settings:[{key:"Firmware",val:"Looping buffer swap"},{key:"Gate in 1",val:"Pams out 3 (triggers swap)"},{key:"In 1",val:"Arcus buff mult 1b (Beads L)"}] },
+    // ── Row 2: sidechain (y=540) ──────────────────────────────
+    { id:"maths", name:"Maths", mfr:"Make Noise", x:640, y:540,
+      inputs:["Ch1 in"], outputs:["Ch1 out"],
+      settings:[{key:"Ch1 signal in",val:"Squid 1+2 out (kick+snare)"},{key:"Rise",val:"Fast (~9 o'clock)"},{key:"Fall",val:"Med-slow (~2 o'clock)"}] }
+  ],
+  cables: [
+    {id:"c1",  num:1,  type:"clock", from:"pams",           fromPort:"Out 1",     to:"bloom",            toPort:"Clock in",   label:"Master clock to sequencer"},
+    {id:"c2",  num:2,  type:"clock", from:"pams",           fromPort:"Out 2",     to:"mfx",              toPort:"Clock in",   label:"Effect sync clock"},
+    {id:"c3",  num:3,  type:"clock", from:"pams",           fromPort:"Out 2",     to:"beads",            toPort:"Seed in",    label:"Granular buffer freeze"},
+    {id:"c4",  num:4,  type:"pitch", from:"bloom",          fromPort:"Note 1",    to:"sto",              toPort:"1V/Oct",     label:"Sequenced pitch to STO"},
+    {id:"c5",  num:5,  type:"pitch", from:"bloom",          fromPort:"Note 2",    to:"beads",            toPort:"Pitch in",   label:"Sequenced pitch to granular"},
+    {id:"c6",  num:6,  type:"pitch", from:"bloom",          fromPort:"Note 3",    to:"plaits",           toPort:"1V/Oct",     label:"Sequenced pitch to harmonic engine"},
+    {id:"c7",  num:7,  type:"gate",  from:"bloom",          fromPort:"Gate 3",    to:"plaits",           toPort:"Trig",       label:"Triggers Plaits internal LPG"},
+    {id:"c8",  num:8,  type:"gate",  from:"pams",           fromPort:"Out 3",     to:"daisypatch",       toPort:"Gate in 1",  label:"Triggers Daisy buffer swap"},
+    {id:"c9",  num:9,  type:"gate",  from:"pams",           fromPort:"Out 5",     to:"squid",            toPort:"Trig 1",     label:"Kick drum trigger"},
+    {id:"c10", num:10, type:"gate",  from:"pams",           fromPort:"Out 6",     to:"squid",            toPort:"Trig 2",     label:"Snare trigger"},
+    {id:"c11", num:11, type:"gate",  from:"pams",           fromPort:"Out 7",     to:"squid",            toPort:"Trig 3",     label:"Closed hat trigger"},
+    {id:"c12", num:12, type:"gate",  from:"pams",           fromPort:"Out 8",     to:"squid",            toPort:"Trig 4",     label:"Open hat trigger"},
+    {id:"c13", num:13, type:"cv",    from:"zadar",          fromPort:"Out A",     to:"squid",            toPort:"CV in 1",    label:"Snare pitch modulation"},
+    {id:"c14", num:14, type:"cv",    from:"zadar",          fromPort:"Out C",     to:"polaris",          toPort:"FM2 in",     label:"Filter cutoff envelope"},
+    {id:"c15", num:15, type:"cv",    from:"zadar",          fromPort:"Out D",     to:"mfx",              toPort:"CV in 1",    label:"MFX parameter sweep"},
+    {id:"c16", num:16, type:"cv",    from:"maths",          fromPort:"Ch1 out",   to:"quadvca",          toPort:"CV in 1",    label:"Sidechain compression on ch1"},
+    {id:"c17", num:17, type:"audio", from:"sto",            fromPort:"Complex out",to:"polaris",         toPort:"In",         label:"Main osc into filter"},
+    {id:"c18", num:18, type:"audio", from:"sto",            fromPort:"Sub out",   to:"quadvca",          toPort:"In 2",       label:"Sub voice, unfiltered"},
+    {id:"c19", num:19, type:"audio", from:"polaris",        fromPort:"LP out",    to:"quadvca",          toPort:"In 1",       label:"Filtered STO voice"},
+    {id:"c20", num:20, type:"audio", from:"plaits",         fromPort:"Out",       to:"megamilton-mixer", toPort:"Mixer in 1", label:"Harmonic voice to mix"},
+    {id:"c21", num:21, type:"audio", from:"squid",          fromPort:"1+2 out",   to:"megamilton-mixer", toPort:"Mixer in 2", label:"Kick+snare to mix"},
+    {id:"c22", num:22, type:"audio", from:"squid",          fromPort:"1+2 out",   to:"maths",            toPort:"Ch1 in",     label:"Kick+snare to sidechain"},
+    {id:"c23", num:23, type:"audio", from:"squid",          fromPort:"Mix out",   to:"megamilton-mixer", toPort:"Mixer in 3", label:"Hats to mix"},
+    {id:"c24", num:24, type:"audio", from:"megamilton-mixer",fromPort:"Mixer out", to:"quadvca",         toPort:"In 3",       label:"Pre-effects mix to VCA"},
+    {id:"c25", num:25, type:"audio", from:"disting",        fromPort:"Out 1",     to:"quadvca",          toPort:"In 4",       label:"Convolved room re-enters mix"},
+    {id:"c26", num:26, type:"audio", from:"quadvca",        fromPort:"Mix out",   to:"megamilton-mult",  toPort:"Buff in",    label:"Final mix to distribution"},
+    {id:"c27", num:27, type:"audio", from:"megamilton-mult",fromPort:"Buff out 2",to:"mfx",              toPort:"In L",       label:"Left send to reverb"},
+    {id:"c28", num:28, type:"audio", from:"megamilton-mult",fromPort:"Buff out 3",to:"mfx",              toPort:"In R",       label:"Right send to reverb"},
+    {id:"c29", num:29, type:"audio", from:"mfx",            fromPort:"Out L",     to:"beads",            toPort:"In L",       label:"Effected left into granular"},
+    {id:"c30", num:30, type:"audio", from:"mfx",            fromPort:"Out R",     to:"beads",            toPort:"In R",       label:"Effected right into granular"},
+    {id:"c31", num:31, type:"audio", from:"beads",          fromPort:"L out",     to:"arcusbuffmult",    toPort:"In 1",       label:"Left granular to distribution"},
+    {id:"c32", num:32, type:"audio", from:"beads",          fromPort:"R out",     to:"arcusbuffmult",    toPort:"In 2",       label:"Right granular to distribution"},
+    {id:"c33", num:33, type:"audio", from:"arcusbuffmult",  fromPort:"1a out",    to:"listonio",         toPort:"L in",       label:"Left to monitors"},
+    {id:"c34", num:34, type:"audio", from:"arcusbuffmult",  fromPort:"1b out",    to:"daisypatch",       toPort:"In 1",       label:"Left into degradation loop"},
+    {id:"c35", num:35, type:"audio", from:"daisypatch",     fromPort:"Out 1",     to:"disting",          toPort:"In 1",       label:"Buffer into convolver"},
+    {id:"c36", num:36, type:"audio", from:"arcusbuffmult",  fromPort:"2a out",    to:"listonio",         toPort:"R in",       label:"Right to monitors"}
+  ],
+  tips: [
+    "Start Quad VCA ch4 (Disting EX) at zero. Fade in the convolved room signal slowly after the groove is established.",
+    "Daisy buffer swap rate (Pams out 3): slow rate = gradual degradation, fast = stuttering artifacts. Try ÷32 first.",
+    "Sidechain pump: Maths fall time controls how long Quad VCA ch1 ducks. Medium-slow fall = classic house pumping.",
+    "Bloom mutation: Start at 0 for a steady groove, increase slowly for melodic variation across all three voices.",
+    "Polaris as performance control: Sweep cutoff manually. Zadar C adds an attack transient on each hit.",
+    "Beads seed rate (Pams out 2): slow = continuous evolution. Unpatch to freeze Beads into a sustained granular drone.",
+    "Zadar B is unused — try patching it to Beads density for evolving granular movement as the patch degrades."
+  ]
+};
+
+// ─────────────────────────────────────────────────────────────
+// RENDERING ENGINE
+// ─────────────────────────────────────────────────────────────
+const COLOR = { audio:"#E24A33", cv:"#348ABD", gate:"#52A35F", clock:"#E5AE38", pitch:"#9B59B6" };
+const LABEL = { audio:"Audio", cv:"CV/Mod", gate:"Gate", clock:"Clock", pitch:"V/Oct" };
+
+const NODE_W = 160, NODE_HDR = 30, PORT_H = 20, PORT_PAD = 8, PORT_R = 5, PAD = 30;
+
+function nodeH(mod) {
+  return NODE_HDR + PORT_PAD + Math.max(mod.inputs.length, mod.outputs.length, 1) * PORT_H + PORT_PAD;
+}
+
+const modMap = {};
+
+function portPos(modId, name, isInput) {
+  const m = modMap[modId];
+  const list = isInput ? m.inputs : m.outputs;
+  const i = list.indexOf(name);
+  return {
+    x: isInput ? m.x : m.x + NODE_W,
+    y: m.y + NODE_HDR + PORT_PAD + (i < 0 ? 0 : i) * PORT_H + PORT_H / 2
+  };
+}
+
+function cablePath(x1, y1, x2, y2) {
+  if (x2 > x1 + 20) {
+    const dx = Math.max(55, Math.abs(x2 - x1) * 0.45);
+    return `M ${x1},${y1} C ${x1+dx},${y1} ${x2-dx},${y2} ${x2},${y2}`;
+  }
+  // Backwards / same-column: arc below
+  const by = Math.max(y1, y2) + 90;
+  const mx = (x1 + x2) / 2;
+  return `M ${x1},${y1} C ${x1+70},${y1} ${x1+70},${by} ${mx},${by} C ${x2-70},${by} ${x2-70},${y2} ${x2},${y2}`;
+}
+
+function ns(tag) { return document.createElementNS("http://www.w3.org/2000/svg", tag); }
+function attr(el, o) { Object.entries(o).forEach(([k,v]) => el.setAttribute(k, v)); return el; }
+
+// ── Build module lookup ──────────────────────────────────────
+PATCH.modules.forEach(m => { modMap[m.id] = m; });
+
+// Compute SVG dimensions
+let maxX = 0, maxY = 0;
+PATCH.modules.forEach(m => {
+  maxX = Math.max(maxX, m.x + NODE_W + PAD);
+  maxY = Math.max(maxY, m.y + nodeH(m) + PAD);
+});
+
+const svg     = document.getElementById("patch-svg");
+const svgDefs = document.getElementById("svg-defs");
+const gridL   = document.getElementById("grid-layer");
+const cablesL = document.getElementById("cables-layer");
+const nodesL  = document.getElementById("nodes-layer");
+const tooltip = document.getElementById("cable-tooltip");
+const panel   = document.getElementById("module-panel");
+
+attr(svg, { viewBox: `0 0 ${maxX} ${maxY}`, width: maxX, height: maxY });
+
+// Dot-grid background
+svgDefs.innerHTML += `
+  <pattern id="dots" x="0" y="0" width="20" height="20" patternUnits="userSpaceOnUse">
+    <circle cx="1" cy="1" r="1" fill="#b8c4d4" opacity="0.6"/>
+  </pattern>
+  <filter id="nshadow" x="-8%" y="-8%" width="125%" height="140%">
+    <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#00000020"/>
+  </filter>`;
+attr(gridL.appendChild(ns("rect")), { x:0, y:0, width:maxX, height:maxY, fill:"url(#dots)" });
+
+// Arrow markers
+Object.entries(COLOR).forEach(([type, color]) => {
+  const m = ns("marker");
+  attr(m, { id:"arr-"+type, markerWidth:"7", markerHeight:"5", refX:"6", refY:"2.5", orient:"auto" });
+  m.innerHTML = `<path d="M0,0 L0,5 L7,2.5 z" fill="${color}"/>`;
+  svgDefs.appendChild(m);
+});
+
+// Port type lookup: "modId:portName" → signal type (for dot colouring)
+const portType = {};
+PATCH.cables.forEach(c => {
+  portType[`${c.from}:${c.fromPort}`] = c.type;
+  portType[`${c.to}:${c.toPort}`]     = c.type;
+});
+
+// ── Draw nodes ──────────────────────────────────────────────
+PATCH.modules.forEach(mod => {
+  const h = nodeH(mod);
+  const g = ns("g");
+  attr(g, { "data-module-id": mod.id, filter: "url(#nshadow)" });
+  g.classList.add("node-card");
+
+  // Card bg
+  const bg = ns("rect");
+  attr(bg, { x:mod.x, y:mod.y, width:NODE_W, height:h, rx:7 });
+  bg.classList.add("node-bg");
+  g.appendChild(bg);
+
+  // Header: rounded rect clipped to top 30px
+  const clipId = "hc-" + mod.id;
+  const cp = ns("clipPath"); cp.setAttribute("id", clipId);
+  cp.appendChild(attr(ns("rect"), { x:mod.x, y:mod.y, width:NODE_W, height:NODE_HDR }));
+  svgDefs.appendChild(cp);
+  const hdr = ns("rect");
+  attr(hdr, { x:mod.x, y:mod.y, width:NODE_W, height:NODE_HDR+7, rx:7, "clip-path":`url(#${clipId})` });
+  hdr.classList.add("node-header-fill");
+  g.appendChild(hdr);
+
+  // Name + mfr
+  const nm = ns("text");
+  attr(nm, { x: mod.x+8, y: mod.y+12 });
+  nm.classList.add("node-name");
+  nm.textContent = mod.name.length > 19 ? mod.name.slice(0,18)+"…" : mod.name;
+  g.appendChild(nm);
+
+  const mf = ns("text");
+  attr(mf, { x: mod.x+8, y: mod.y+23 });
+  mf.classList.add("node-mfr");
+  mf.textContent = mod.mfr.length > 23 ? mod.mfr.slice(0,22)+"…" : mod.mfr;
+  g.appendChild(mf);
+
+  // Input ports (left edge)
+  mod.inputs.forEach((name, i) => {
+    const py = mod.y + NODE_HDR + PORT_PAD + i * PORT_H + PORT_H / 2;
+    const dot = ns("circle");
+    attr(dot, { cx: mod.x, cy: py, r: PORT_R });
+    dot.classList.add("port-dot");
+    const pt = portType[`${mod.id}:${name}`];
+    if (pt) dot.classList.add(pt);
+    g.appendChild(dot);
+
+    const lbl = ns("text");
+    attr(lbl, { x: mod.x + PORT_R + 5, y: py });
+    lbl.classList.add("port-label");
+    lbl.textContent = name;
+    g.appendChild(lbl);
+  });
+
+  // Output ports (right edge)
+  mod.outputs.forEach((name, i) => {
+    const py = mod.y + NODE_HDR + PORT_PAD + i * PORT_H + PORT_H / 2;
+    const dot = ns("circle");
+    attr(dot, { cx: mod.x + NODE_W, cy: py, r: PORT_R });
+    dot.classList.add("port-dot");
+    const pt = portType[`${mod.id}:${name}`];
+    if (pt) dot.classList.add(pt);
+    g.appendChild(dot);
+
+    const lbl = ns("text");
+    attr(lbl, { x: mod.x + NODE_W - PORT_R - 5, y: py });
+    lbl.classList.add("port-label", "out");
+    lbl.textContent = name;
+    g.appendChild(lbl);
+  });
+
+  g.addEventListener("click", () => openPanel(mod));
+  nodesL.appendChild(g);
+});
+
+// ── Draw cables ─────────────────────────────────────────────
+PATCH.cables.forEach(cable => {
+  const src = portPos(cable.from, cable.fromPort, false);
+  const dst = portPos(cable.to,   cable.toPort,   true);
+  const d   = cablePath(src.x, src.y, dst.x, dst.y);
+
+  const path = ns("path");
+  attr(path, { d, "data-cable-id": cable.id, "data-type": cable.type });
+  path.classList.add("cable");
+  path.style.markerEnd = `url(#arr-${cable.type})`;
+  cablesL.appendChild(path);
+
+  // Wide transparent hit area
+  const hit = ns("path");
+  attr(hit, { d, fill:"none", stroke:"transparent", "stroke-width":"14" });
+  hit.style.cursor = "pointer";
+  hit.addEventListener("mouseenter", e => showTip(cable, e));
+  hit.addEventListener("mousemove",  e => moveTip(e));
+  hit.addEventListener("mouseleave", hideTip);
+  cablesL.appendChild(hit);
+});
+
+// ── Populate header ──────────────────────────────────────────
+document.getElementById("patch-title").textContent     = PATCH.title;
+document.getElementById("patch-category").textContent  = PATCH.category;
+document.getElementById("patch-complexity").textContent= PATCH.complexity;
+document.getElementById("patch-voices").textContent    = PATCH.voices;
+document.getElementById("patch-date").textContent      = PATCH.date;
+
+const tipsList = document.getElementById("tips-list");
+PATCH.tips.forEach(t => { const li = document.createElement("li"); li.textContent = t; tipsList.appendChild(li); });
+
+// Cable table
+const tbody = document.getElementById("cable-tbody");
+const groups = {};
+PATCH.cables.forEach(c => { (groups[c.type] = groups[c.type]||[]).push(c); });
+Object.entries(groups).forEach(([type, cables]) => {
+  const hdr = document.createElement("tr");
+  hdr.classList.add("cable-section-head");
+  hdr.innerHTML = `<td colspan="7">${LABEL[type]}</td>`;
+  tbody.appendChild(hdr);
+  cables.forEach(c => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `<td class="cable-num">${c.num}</td><td>${c.from}</td><td>${c.fromPort}</td><td>${c.to}</td><td>${c.toPort}</td><td><span class="sig-chip ${type}">${LABEL[type]}</span></td><td>${c.label}</td>`;
+    tbody.appendChild(tr);
+  });
+});
+
+// ── Type filter ──────────────────────────────────────────────
+let hiddenTypes = new Set();
+document.querySelectorAll(".type-btn").forEach(btn => {
+  btn.addEventListener("click", () => {
+    const t = btn.dataset.type;
+    hiddenTypes.has(t) ? (hiddenTypes.delete(t), btn.classList.add("active"))
+                       : (hiddenTypes.add(t),    btn.classList.remove("active"));
+    refreshCables();
+  });
+});
+
+let focusedSet = null; // Set of cable IDs when a module is selected
+
+function refreshCables() {
+  document.querySelectorAll(".cable[data-cable-id]").forEach(p => {
+    const hidden  = hiddenTypes.has(p.dataset.type);
+    const dimmed  = focusedSet && !focusedSet.has(p.dataset.cableId);
+    p.style.opacity = hidden ? "0" : dimmed ? "0.07" : "1";
+  });
+}
+
+// ── Animate ──────────────────────────────────────────────────
+let animating = false;
+document.getElementById("anim-toggle").addEventListener("click", function() {
+  animating = !animating;
+  this.classList.toggle("active", animating);
+  this.textContent = animating ? "⏸ Animate" : "▶ Animate";
+  document.querySelectorAll(".cable").forEach(p => p.classList.toggle("animate", animating));
+});
+
+// ── Tooltip ──────────────────────────────────────────────────
+function showTip(cable, e) {
+  cablesL.querySelector(`[data-cable-id="${cable.id}"]`)?.classList.add("hovered");
+  document.getElementById("tt-type").textContent  = LABEL[cable.type];
+  document.getElementById("tt-type").style.color  = COLOR[cable.type];
+  document.getElementById("tt-route").textContent = `${cable.from} → ${cable.to}`;
+  document.getElementById("tt-ports").textContent = `${cable.fromPort} → ${cable.toPort}`;
+  document.getElementById("tt-note").textContent  = cable.label;
+  tooltip.classList.add("visible");
+  moveTip(e);
+}
+function moveTip(e) {
+  tooltip.style.left = Math.min(e.clientX+14, window.innerWidth-300)+"px";
+  tooltip.style.top  = Math.min(e.clientY+14, window.innerHeight-130)+"px";
+}
+function hideTip() {
+  tooltip.classList.remove("visible");
+  document.querySelectorAll(".cable.hovered").forEach(p => p.classList.remove("hovered"));
+}
+
+// ── Module panel ─────────────────────────────────────────────
+let selectedMod = null;
+
+function openPanel(mod) {
+  if (selectedMod === mod.id) { closePanel(); return; }
+  selectedMod = mod.id;
+  document.querySelectorAll(".node-card").forEach(g => g.classList.remove("selected"));
+  document.querySelector(`[data-module-id="${mod.id}"]`)?.classList.add("selected");
+
+  focusedSet = new Set(PATCH.cables.filter(c => c.from===mod.id||c.to===mod.id).map(c=>c.id));
+  refreshCables();
+
+  document.getElementById("panel-name").textContent = mod.name;
+  document.getElementById("panel-mfr").textContent  = mod.mfr;
+  const body = document.getElementById("panel-body");
+  body.innerHTML = "";
+
+  const sh = document.createElement("div");
+  sh.className = "panel-section-title"; sh.textContent = "Settings (this patch)";
+  body.appendChild(sh);
+  mod.settings.forEach(s => {
+    const row = document.createElement("div"); row.className = "panel-setting";
+    row.innerHTML = `<span class="key">${s.key}</span><span class="val">${s.val}</span>`;
+    body.appendChild(row);
+  });
+
+  const cables = PATCH.cables.filter(c => c.from===mod.id||c.to===mod.id);
+  if (cables.length) {
+    const ch = document.createElement("div");
+    ch.className = "panel-section-title"; ch.textContent = "Connections";
+    body.appendChild(ch);
+    const cbox = document.createElement("div"); cbox.className = "panel-cables";
+    cables.forEach(c => {
+      const isOut = c.from === mod.id;
+      const row = document.createElement("div"); row.className = "panel-cable-row";
+      row.innerHTML = `<div class="cable-dot" style="background:${COLOR[c.type]}"></div>
+        <div><strong>${isOut?"→":"←"} ${isOut?c.to:c.from}</strong><br>
+        <span style="font-size:0.73rem;color:#777">${isOut?c.fromPort:c.toPort} · ${LABEL[c.type]}</span></div>`;
+      cbox.appendChild(row);
+    });
+    body.appendChild(cbox);
+  }
+  panel.classList.add("open");
+}
+
+function closePanel() {
+  selectedMod = null; focusedSet = null;
+  panel.classList.remove("open");
+  document.querySelectorAll(".node-card").forEach(g => g.classList.remove("selected"));
+  refreshCables();
+}
+
+document.getElementById("panel-close").addEventListener("click", closePanel);
+document.addEventListener("click", e => {
+  if (selectedMod && !panel.contains(e.target) && !e.target.closest(".node-card")) closePanel();
+});
+</script>
+</body>
+</html>
