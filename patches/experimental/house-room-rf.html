@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <!--
-  House Room — Eurorack Patcher (React Flow)
-  Requires internet to load React Flow via CDN.
+  House Room — Eurorack Patcher (React Flow + ELK auto-layout)
+  Requires internet to load React Flow and elkjs via CDN.
   16 modules · 36 cables
 -->
 <html lang="en">
@@ -99,6 +99,8 @@
     .cable-table th { text-align: left; font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #888; border-bottom: 2px solid #e0e0e0; padding: 6px 8px; }
     .cable-table td { padding: 5px 8px; border-bottom: 1px solid #f0f0f0; color: #333; }
     .cable-table tr:hover td { background: #fafafa; }
+    .cable-table tr.cable-row { cursor: default; }
+    .cable-table tr.cable-row.hover-edge td { background: #fff4d6; box-shadow: inset 2px 0 0 #1a1a1a; }
     .cable-table .cn { color: #bbb; font-weight: 600; }
     .sig { display: inline-block; padding: 1px 6px; border-radius: 8px; font-size: 0.68rem; font-weight: 700; color: #fff; }
     .sig.audio { background: #E24A33; } .sig.cv    { background: #348ABD; }
@@ -178,14 +180,14 @@
 }
 </script>
 <script type="module">
-import React, { useState, useMemo, useCallback } from 'https://esm.sh/react@18'
+import React, { useState, useMemo, useCallback, useEffect } from 'https://esm.sh/react@18'
 import { createRoot } from 'https://esm.sh/react-dom@18/client'
 import {
-  ReactFlow, Background, Controls, MiniMap,
-  Handle, Position, MarkerType,
-  useNodesState, useEdgesState
+  ReactFlow, ReactFlowProvider, Background, Controls, MiniMap,
+  Handle, Position, MarkerType, BaseEdge, useReactFlow, useNodesState
 } from 'https://esm.sh/@xyflow/react@12?external=react,react-dom'
 import htm from 'https://esm.sh/htm@3'
+import ELK from 'https://esm.sh/elkjs@0.9.3/lib/elk.bundled.js'
 
 const html = htm.bind(React.createElement)
 
@@ -319,8 +321,6 @@ PATCH.cables.forEach(c => {
 // CUSTOM NODE
 // ─────────────────────────────────────────────────────────────
 function ModuleNode({ data, selected }) {
-  const maxRows = Math.max(data.inputs.length, data.outputs.length)
-
   return html`
     <div class=${"mod-node" + (selected ? " selected" : "")}>
       <div class="mod-hdr">
@@ -359,27 +359,155 @@ function ModuleNode({ data, selected }) {
 const nodeTypes = { module: ModuleNode }
 
 // ─────────────────────────────────────────────────────────────
-// INITIAL RF DATA
+// ELK LAYOUT — node sizing + graph definition
 // ─────────────────────────────────────────────────────────────
-const initialNodes = PATCH.modules.map(m => ({
-  id: m.id, type: 'module',
-  position: { x: m.x, y: m.y },
-  data: m
-}))
-
-function makeEdge(c, hidden, animated) {
-  return {
-    id: c.id,
-    source: c.from, sourceHandle: c.fromPort,
-    target: c.to,   targetHandle: c.toPort,
-    type: 'smoothstep',
-    hidden,
-    animated,
-    style: { stroke: COLOR[c.type], strokeWidth: animated ? 2.5 : 2 },
-    markerEnd: { type: MarkerType.ArrowClosed, color: COLOR[c.type], width: 14, height: 10 },
-    data: c
-  }
+const NODE_W = 180
+function nodeHeight(m) {
+  const maxRows = Math.max(m.inputs.length, m.outputs.length)
+  return HDR_H + PORT_PAD * 2 + maxRows * PORT_H
 }
+
+const elkGraph = {
+  id: 'root',
+  layoutOptions: {
+    'elk.algorithm': 'layered',
+    'elk.direction': 'RIGHT',
+    'elk.edgeRouting': 'ORTHOGONAL',
+    'elk.layered.spacing.nodeNodeBetweenLayers': '110',
+    'elk.spacing.nodeNode': '70',
+    'elk.spacing.edgeNode': '40',
+    'elk.spacing.edgeEdge': '25',
+    'elk.layered.spacing.edgeNodeBetweenLayers': '40',
+    'elk.portConstraints': 'FIXED_POS',
+  },
+  children: PATCH.modules.map(m => ({
+    id: m.id,
+    width: NODE_W,
+    height: nodeHeight(m),
+    ports: [
+      ...m.inputs.map((p, i) => ({
+        id: `${m.id}.${p}`, x: 0, y: portTop(i),
+        width: 1, height: 1,
+        layoutOptions: { 'port.side': 'WEST' },
+      })),
+      ...m.outputs.map((p, i) => ({
+        id: `${m.id}.${p}`, x: NODE_W, y: portTop(i),
+        width: 1, height: 1,
+        layoutOptions: { 'port.side': 'EAST' },
+      })),
+    ],
+  })),
+  edges: PATCH.cables.map(c => ({
+    id: c.id,
+    sources: [`${c.from}.${c.fromPort}`],
+    targets: [`${c.to}.${c.toPort}`],
+  })),
+}
+
+// ─────────────────────────────────────────────────────────────
+// CUSTOM EDGE — draws ELK's orthogonal route, falls back to L-path on drag.
+// Renders a small cable-number badge at the path midpoint.
+// ─────────────────────────────────────────────────────────────
+function pathPoints({ sections, sourceX, sourceY, targetX, targetY, isBack, yBelow }) {
+  // Back-edge: hand-route under the row from labeled source port to labeled target port.
+  if (isBack && yBelow != null) {
+    const PAD = 24
+    return [
+      { x: sourceX,        y: sourceY },
+      { x: sourceX + PAD,  y: sourceY },
+      { x: sourceX + PAD,  y: yBelow },
+      { x: targetX - PAD,  y: yBelow },
+      { x: targetX - PAD,  y: targetY },
+      { x: targetX,        y: targetY },
+    ]
+  }
+  // Forward: trust ELK's orthogonal route if its endpoints still match the live handle positions.
+  if (sections?.length) {
+    const s = sections[0]
+    const matches = (a, b) => Math.abs(a.x - b.x) < 1 && Math.abs(a.y - b.y) < 1
+    if (matches(s.startPoint, { x: sourceX, y: sourceY }) &&
+        matches(s.endPoint,   { x: targetX, y: targetY })) {
+      return [s.startPoint, ...(s.bendPoints || []), s.endPoint]
+    }
+  }
+  // Fallback (drag): simple L-shape.
+  const midX = (sourceX + targetX) / 2
+  return [
+    { x: sourceX, y: sourceY },
+    { x: midX,    y: sourceY },
+    { x: midX,    y: targetY },
+    { x: targetX, y: targetY },
+  ]
+}
+
+function midpointAlong(points) {
+  let total = 0
+  const lens = []
+  for (let i = 0; i < points.length - 1; i++) {
+    const dx = points[i+1].x - points[i].x
+    const dy = points[i+1].y - points[i].y
+    const l = Math.hypot(dx, dy)
+    lens.push(l); total += l
+  }
+  let target = total / 2
+  for (let i = 0; i < lens.length; i++) {
+    if (target <= lens[i]) {
+      const t = lens[i] === 0 ? 0 : target / lens[i]
+      return {
+        x: points[i].x + (points[i+1].x - points[i].x) * t,
+        y: points[i].y + (points[i+1].y - points[i].y) * t,
+      }
+    }
+    target -= lens[i]
+  }
+  return points[points.length - 1]
+}
+
+// Badge anchor: prefer the midpoint of the longest *horizontal* segment.
+// For parallel cables sharing a vertical channel, the horizontal stubs are
+// at distinct port-y values, so badges naturally separate by row instead of
+// stacking on the shared column.
+function badgeAnchor(points) {
+  let bestIdx = -1, bestLen = 0
+  for (let i = 0; i < points.length - 1; i++) {
+    const dx = points[i+1].x - points[i].x
+    const dy = points[i+1].y - points[i].y
+    if (Math.abs(dy) < 0.5) {
+      const len = Math.abs(dx)
+      if (len > bestLen) { bestLen = len; bestIdx = i }
+    }
+  }
+  if (bestIdx >= 0 && bestLen >= 18) {
+    return {
+      x: (points[bestIdx].x + points[bestIdx+1].x) / 2,
+      y: points[bestIdx].y,
+    }
+  }
+  return midpointAlong(points)
+}
+
+function ElkEdge({ id, data, style, markerEnd, sourceX, sourceY, targetX, targetY }) {
+  const points = pathPoints({
+    sections: data?.sections,
+    sourceX, sourceY, targetX, targetY,
+    isBack: data?.isBack, yBelow: data?.yBelow,
+  })
+  const path = points.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ')
+  const mid = badgeAnchor(points)
+  const stroke = style?.stroke || '#888'
+  const opacity = style?.opacity ?? 1
+  return html`<${React.Fragment}>
+    <${BaseEdge} id=${id} path=${path} style=${style} markerEnd=${markerEnd} />
+    <g transform=${`translate(${mid.x}, ${mid.y})`}
+       style=${{ pointerEvents: 'none', opacity, transition: 'opacity 0.12s' }}>
+      <circle r="9" fill="white" stroke=${stroke} strokeWidth="1.5" />
+      <text textAnchor="middle" dominantBaseline="central"
+            fontSize="9" fontWeight="700" fill="#222">${data.num}</text>
+    </g>
+  </${React.Fragment}>`
+}
+
+const edgeTypes = { elk: ElkEdge }
 
 
 // ─────────────────────────────────────────────────────────────
@@ -436,24 +564,80 @@ function publish(state) { _listeners.forEach(fn => fn(state)) }
 let _hiddenTypes = new Set()
 let _animating   = false
 
-function App() {
+const moduleById = Object.fromEntries(PATCH.modules.map(m => [m.id, m]))
+const cableById  = Object.fromEntries(PATCH.cables.map(c => [c.id, c]))
+
+function Flow({ layout }) {
   const [hiddenTypes, setHiddenTypes] = useState(_hiddenTypes)
   const [animating, setAnimating]     = useState(_animating)
+  const [hoveredId, setHoveredId]     = useState(null)
+  const rf = useReactFlow()
 
-  // Re-export setters globally
-  React.useEffect(() => {
-    subscribe(({hiddenTypes: ht, animating: an}) => {
+  useEffect(() => {
+    subscribe(({hiddenTypes: ht, animating: an, hoveredId: hi}) => {
       if (ht !== undefined) setHiddenTypes(new Set(ht))
       if (an !== undefined) setAnimating(an)
+      if (hi !== undefined) setHoveredId(hi)
     })
   }, [])
 
+  const initialNodes = useMemo(() =>
+    layout.children.map(c => ({
+      id: c.id, type: 'module',
+      position: { x: c.x, y: c.y },
+      data: moduleById[c.id],
+    })), [layout])
+
+  const [nodes,, onNodesChange] = useNodesState(initialNodes)
+
+  // Layout-derived: which edges visually U-turn (target node sits left of source),
+  // and the Y-coordinate of a clear lane below the lowest node row.
+  const backIds = useMemo(() => {
+    const pos = Object.fromEntries(layout.children.map(c => [c.id, c]))
+    const set = new Set()
+    layout.edges.forEach(e => {
+      const c = cableById[e.id]
+      const s = pos[c.from], t = pos[c.to]
+      if (s && t && t.x < s.x) set.add(c.id)
+    })
+    return set
+  }, [layout])
+
+  const yBelow = useMemo(() =>
+    Math.max(...layout.children.map(c => c.y + c.height)) + 60,
+    [layout])
+
   const edges = useMemo(() =>
-    PATCH.cables.map(c => makeEdge(c, hiddenTypes.has(c.type), animating)),
-    [hiddenTypes, animating]
-  )
+    layout.edges.map(e => {
+      const c = cableById[e.id]
+      const isHovered = hoveredId === c.id
+      const dimmed    = hoveredId !== null && !isHovered
+      const baseW = animating ? 2.5 : 2
+      return {
+        id: c.id,
+        source: c.from, sourceHandle: c.fromPort,
+        target: c.to,   targetHandle: c.toPort,
+        type: 'elk',
+        hidden: hiddenTypes.has(c.type),
+        animated: animating,
+        zIndex: isHovered ? 1000 : 0,
+        style: {
+          stroke: COLOR[c.type],
+          strokeWidth: isHovered ? 4 : baseW,
+          opacity: dimmed ? 0.18 : 1,
+          transition: 'stroke-width 0.12s, opacity 0.12s',
+        },
+        markerEnd: { type: MarkerType.ArrowClosed, color: COLOR[c.type], width: 14, height: 10 },
+        data: { ...c, sections: e.sections, isBack: backIds.has(c.id), yBelow },
+      }
+    }), [layout, hiddenTypes, animating, hoveredId, backIds, yBelow])
+
+  useEffect(() => {
+    requestAnimationFrame(() => rf.fitView({ padding: 0.08 }))
+  }, [layout, rf])
 
   const onEdgeMouseEnter = useCallback((_, edge) => {
+    publish({ hoveredId: edge.id })
     const c = edge.data
     const tip = document.getElementById('edge-tip')
     document.getElementById('tip-type').textContent  = LABEL[c.type]
@@ -465,6 +649,7 @@ function App() {
   }, [])
 
   const onEdgeMouseLeave = useCallback(() => {
+    publish({ hoveredId: null })
     document.getElementById('edge-tip').classList.remove('show')
   }, [])
 
@@ -474,13 +659,12 @@ function App() {
     tip.style.top  = Math.min(e.clientY+14, window.innerHeight-130)+'px'
   }, [])
 
-  const [nodes,, onNodesChange] = useNodesState(initialNodes)
-
   return html`
     <${ReactFlow}
       nodes=${nodes}
       edges=${edges}
       nodeTypes=${nodeTypes}
+      edgeTypes=${edgeTypes}
       onNodesChange=${onNodesChange}
       onEdgeMouseEnter=${onEdgeMouseEnter}
       onEdgeMouseLeave=${onEdgeMouseLeave}
@@ -495,6 +679,23 @@ function App() {
       <${Controls} />
       <${MiniMap} nodeStrokeWidth=${3} zoomable pannable />
     </${ReactFlow}>`
+}
+
+function App() {
+  const [layout, setLayout] = useState(null)
+
+  useEffect(() => {
+    const elk = new ELK()
+    elk.layout(elkGraph).then(setLayout).catch(err => {
+      console.error('ELK layout failed:', err)
+    })
+  }, [])
+
+  if (!layout) {
+    return html`<div style=${{padding:'24px', color:'#666', fontSize:'0.9rem'}}>Computing layout…</div>`
+  }
+
+  return html`<${ReactFlowProvider}><${Flow} layout=${layout} /></${ReactFlowProvider}>`
 }
 
 createRoot(document.getElementById('rf-root')).render(html`<${App} />`)
@@ -521,8 +722,9 @@ document.getElementById('anim-btn').addEventListener('click', function() {
 const tipsList = document.getElementById('tips-list')
 PATCH.tips.forEach(t => { const li = document.createElement('li'); li.textContent = t; tipsList.appendChild(li) })
 
-// Cable table
+// Cable table — rows are bound bidirectionally with edge hover state via the pub/sub.
 const tbody = document.getElementById('cable-tbody')
+const rowByCable = {}
 const groups = {}
 PATCH.cables.forEach(c => { (groups[c.type] = groups[c.type]||[]).push(c) })
 Object.entries(groups).forEach(([type, cables]) => {
@@ -530,9 +732,21 @@ Object.entries(groups).forEach(([type, cables]) => {
   hdr.innerHTML = `<td colspan="7">${LABEL[type]}</td>`; tbody.appendChild(hdr)
   cables.forEach(c => {
     const tr = document.createElement('tr')
+    tr.classList.add('cable-row')
+    tr.dataset.cableId = c.id
     tr.innerHTML = `<td class="cn">${c.num}</td><td>${c.from}</td><td>${c.fromPort}</td><td>${c.to}</td><td>${c.toPort}</td><td><span class="sig ${type}">${LABEL[type]}</span></td><td>${c.label}</td>`
+    tr.addEventListener('mouseenter', () => publish({ hoveredId: c.id }))
+    tr.addEventListener('mouseleave', () => publish({ hoveredId: null }))
     tbody.appendChild(tr)
+    rowByCable[c.id] = tr
   })
+})
+
+// Mirror hovered edge → table row highlight.
+subscribe(({ hoveredId: hi }) => {
+  if (hi === undefined) return
+  Object.values(rowByCable).forEach(tr => tr.classList.remove('hover-edge'))
+  if (hi && rowByCable[hi]) rowByCable[hi].classList.add('hover-edge')
 })
 </script>
 </body>
