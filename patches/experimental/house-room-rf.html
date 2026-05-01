@@ -85,11 +85,24 @@
     /* Below canvas */
     .patch-content { padding: 24px; max-width: 900px; flex-shrink: 0; }
     details { margin-bottom: 16px; }
-    summary { cursor: pointer; font-size: 0.85rem; font-weight: 600; color: #333; padding: 10px 14px; background: #fff; border: 1px solid #e0e0e0; border-radius: 6px; list-style: none; display: flex; justify-content: space-between; }
+    summary { cursor: pointer; font-size: 0.85rem; font-weight: 600; color: #333; padding: 10px 14px; background: #fff; border: 1px solid #e0e0e0; border-radius: 6px; list-style: none; display: flex; justify-content: space-between; align-items: center; transition: background 0.12s, border-color 0.12s; user-select: none; }
+    summary:hover { background: #eef2ff; border-color: #6366f1; }
+    summary:focus-visible { outline: 2px solid #6366f1; outline-offset: 1px; }
     summary::-webkit-details-marker { display: none; }
-    summary::after { content: "▸"; color: #aaa; }
+    summary::after {
+      content: "";
+      width: 0; height: 0;
+      border-left: 6px solid transparent;
+      border-right: 6px solid transparent;
+      border-top: 9px solid #6366f1;
+      margin-left: 10px;
+      flex-shrink: 0;
+      transform: rotate(-90deg);
+      transition: transform 0.2s ease, border-top-color 0.12s;
+    }
+    summary:hover::after { border-top-color: #4338ca; }
     details[open] summary { border-radius: 6px 6px 0 0; }
-    details[open] summary::after { content: "▾"; }
+    details[open] summary::after { transform: rotate(0); }
     .details-body { border: 1px solid #e0e0e0; border-top: none; border-radius: 0 0 6px 6px; background: #fff; padding: 14px; }
     .tips-list { list-style: none; }
     .tips-list li { padding: 7px 0; border-bottom: 1px solid #f0f0f0; font-size: 0.85rem; line-height: 1.55; color: #444; }
@@ -108,6 +121,50 @@
     .sig.pitch { background: #9B59B6; }
     .csec td { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #aaa; padding-top: 12px; padding-bottom: 2px; background: none !important; }
     .patch-footer { padding: 16px 24px; font-size: 0.72rem; color: #999; border-top: 1px solid #e0e0e0; flex-shrink: 0; }
+
+    /* Side-by-side split: canvas + cable rail */
+    .main-split { flex: 1; display: flex; flex-direction: row; min-height: 0; }
+    .main-split #rf-wrap { flex: 1; min-width: 0; min-height: 480px; }
+
+    .split-handle { width: 5px; background: #e0e0e0; cursor: col-resize; flex-shrink: 0; transition: background 0.15s; }
+    .split-handle:hover, .split-handle.dragging { background: #6366f1; }
+
+    .cable-rail { width: 400px; min-width: 320px; max-width: 640px; background: #fafafa; border-left: 1px solid #e0e0e0; overflow-y: auto; flex-shrink: 0; }
+    .cable-rail .patch-content { max-width: none; padding: 4px 16px 14px; }
+    .cable-rail .cable-table { font-size: 0.75rem; }
+    .cable-rail .cable-table td, .cable-rail .cable-table th { padding: 4px 6px; }
+    .cable-rail summary { font-size: 0.8rem; padding: 8px 12px; }
+
+    /* Rail toolbar (collapse toggle) */
+    .rail-toolbar { position: sticky; top: 0; display: flex; justify-content: flex-end; padding: 6px 8px 4px; background: #fafafa; z-index: 2; }
+    .rail-toggle { width: 30px; height: 30px; border: 1px solid #d1d5db; background: #fff; border-radius: 5px; cursor: pointer; font-size: 16px; font-weight: 700; color: #4b5563; display: flex; align-items: center; justify-content: center; line-height: 1; transition: background 0.12s, color 0.12s, border-color 0.12s; }
+    .rail-toggle:hover { background: #eef2ff; color: #4338ca; border-color: #6366f1; }
+
+    /* Collapsed rail state — driven by .rail-collapsed on .main-split */
+    .main-split.rail-collapsed .cable-rail { width: 38px !important; min-width: 38px !important; max-width: 38px !important; overflow: hidden; }
+    .main-split.rail-collapsed .cable-rail .patch-content { display: none; }
+    .main-split.rail-collapsed .split-handle { display: none; }
+    .main-split.rail-collapsed .rail-toolbar { justify-content: center; padding: 6px 4px 4px; }
+
+    /* Sideways section labels (only visible when rail is collapsed) */
+    .rail-vlabels { display: none; }
+    .main-split.rail-collapsed .rail-vlabels { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 10px 0; }
+    .rail-vlabel { writing-mode: vertical-rl; background: #fff; border: 1px solid #d1d5db; border-radius: 5px; padding: 12px 6px; cursor: pointer; font-size: 0.78rem; font-weight: 600; color: #4b5563; white-space: nowrap; letter-spacing: 0.02em; transition: background 0.12s, color 0.12s, border-color 0.12s; font-family: inherit; }
+    .rail-vlabel:hover { background: #eef2ff; color: #4338ca; border-color: #6366f1; }
+
+    /* Narrow viewports: collapse to today's stacked layout */
+    @media (max-width: 1100px) {
+      .main-split { flex-direction: column; }
+      .split-handle { display: none; }
+      .cable-rail { width: auto !important; max-width: none; border-left: none; border-top: 1px solid #e0e0e0; overflow-y: visible; }
+      .cable-rail .patch-content { max-width: 900px; margin: 0 auto; padding: 24px; }
+      .cable-rail .cable-table { font-size: 0.78rem; }
+      .cable-rail .cable-table td, .cable-rail .cable-table th { padding: 5px 8px; }
+      .cable-rail summary { font-size: 0.85rem; padding: 10px 14px; }
+      .rail-toolbar { display: none; }
+      .main-split.rail-collapsed .cable-rail { width: auto !important; min-width: 0 !important; max-width: none !important; overflow: visible; }
+      .main-split.rail-collapsed .cable-rail .patch-content { display: block; }
+    }
   </style>
 </head>
 <body>
@@ -133,7 +190,34 @@
   <button class="anim-btn" id="anim-btn">▶ Animate</button>
 </div>
 
-<div id="rf-wrap"><div id="rf-root"></div></div>
+<div class="main-split">
+  <div id="rf-wrap"><div id="rf-root"></div></div>
+  <div class="split-handle" id="split-handle" role="separator" aria-orientation="vertical" tabindex="0"></div>
+  <aside class="cable-rail" id="cable-rail">
+    <div class="rail-toolbar">
+      <button class="rail-toggle" id="rail-toggle" type="button" aria-expanded="true" aria-label="Collapse cable panel" title="Collapse panel">«</button>
+    </div>
+    <div class="rail-vlabels">
+      <button class="rail-vlabel" type="button" data-target="cables">Full Cable Table</button>
+      <button class="rail-vlabel" type="button" data-target="tips">Performance Tips</button>
+    </div>
+    <div class="patch-content">
+      <details open data-section="cables">
+        <summary>Full Cable Table</summary>
+        <div class="details-body">
+          <table class="cable-table">
+            <thead><tr><th>#</th><th>From</th><th>Jack</th><th>To</th><th>Jack</th><th>Type</th><th>Notes</th></tr></thead>
+            <tbody id="cable-tbody"></tbody>
+          </table>
+        </div>
+      </details>
+      <details open data-section="tips">
+        <summary>Performance Tips</summary>
+        <div class="details-body"><ul class="tips-list" id="tips-list"></ul></div>
+      </details>
+    </div>
+  </aside>
+</div>
 
 <div id="edge-tip">
   <div class="tip-type"  id="tip-type"></div>
@@ -148,22 +232,6 @@
     <button class="panel-close" id="pn-close">✕</button>
   </div>
   <div class="panel-body" id="pn-body"></div>
-</div>
-
-<div class="patch-content">
-  <details>
-    <summary>Performance Tips</summary>
-    <div class="details-body"><ul class="tips-list" id="tips-list"></ul></div>
-  </details>
-  <details>
-    <summary>Full Cable Table</summary>
-    <div class="details-body">
-      <table class="cable-table">
-        <thead><tr><th>#</th><th>From</th><th>Jack</th><th>To</th><th>Jack</th><th>Type</th><th>Notes</th></tr></thead>
-        <tbody id="cable-tbody"></tbody>
-      </table>
-    </div>
-  </details>
 </div>
 
 <footer class="patch-footer">Generated by Claude Code with eurorack-patcher skill</footer>
@@ -574,12 +642,13 @@ function Flow({ layout }) {
   const rf = useReactFlow()
 
   useEffect(() => {
-    subscribe(({hiddenTypes: ht, animating: an, hoveredId: hi}) => {
+    subscribe(({hiddenTypes: ht, animating: an, hoveredId: hi, resized}) => {
       if (ht !== undefined) setHiddenTypes(new Set(ht))
       if (an !== undefined) setAnimating(an)
       if (hi !== undefined) setHoveredId(hi)
+      if (resized !== undefined) requestAnimationFrame(() => rf.fitView({ padding: 0.08, duration: 200 }))
     })
-  }, [])
+  }, [rf])
 
   const initialNodes = useMemo(() =>
     layout.children.map(c => ({
@@ -742,12 +811,73 @@ Object.entries(groups).forEach(([type, cables]) => {
   })
 })
 
-// Mirror hovered edge → table row highlight.
+// Mirror hovered edge → table row highlight + scroll into view in the rail.
 subscribe(({ hoveredId: hi }) => {
   if (hi === undefined) return
   Object.values(rowByCable).forEach(tr => tr.classList.remove('hover-edge'))
-  if (hi && rowByCable[hi]) rowByCable[hi].classList.add('hover-edge')
+  if (hi && rowByCable[hi]) {
+    const tr = rowByCable[hi]
+    tr.classList.add('hover-edge')
+    tr.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
+  }
 })
+
+// Collapse/expand the entire cable rail.
+;(() => {
+  const split  = document.querySelector('.main-split')
+  const toggle = document.getElementById('rail-toggle')
+  if (!split || !toggle) return
+  toggle.addEventListener('click', () => {
+    const collapsed = split.classList.toggle('rail-collapsed')
+    toggle.textContent = collapsed ? '»' : '«'
+    toggle.setAttribute('aria-expanded', String(!collapsed))
+    toggle.setAttribute('aria-label', collapsed ? 'Expand cable panel' : 'Collapse cable panel')
+    toggle.title = collapsed ? 'Expand panel' : 'Collapse panel'
+    publish({ resized: Date.now() })
+  })
+  // Sideways labels (visible while collapsed): expand the rail and jump to that section.
+  document.querySelectorAll('.rail-vlabel').forEach(btn => {
+    btn.addEventListener('click', () => {
+      if (split.classList.contains('rail-collapsed')) toggle.click()
+      const det = document.querySelector(`details[data-section="${btn.dataset.target}"]`)
+      if (det) {
+        det.open = true
+        requestAnimationFrame(() => det.scrollIntoView({ block: 'start', behavior: 'smooth' }))
+      }
+    })
+  })
+})()
+
+// Drag-to-resize the cable rail. Disabled below the responsive breakpoint.
+;(() => {
+  const handle = document.getElementById('split-handle')
+  const rail   = document.getElementById('cable-rail')
+  if (!handle || !rail) return
+  let dragging = false, startX = 0, startW = 0
+  handle.addEventListener('mousedown', e => {
+    if (window.innerWidth <= 1100) return
+    dragging = true
+    handle.classList.add('dragging')
+    startX = e.clientX
+    startW = rail.getBoundingClientRect().width
+    document.body.style.userSelect = 'none'
+    document.body.style.cursor = 'col-resize'
+    e.preventDefault()
+  })
+  document.addEventListener('mousemove', e => {
+    if (!dragging) return
+    const w = Math.max(320, Math.min(640, startW + (startX - e.clientX)))
+    rail.style.width = w + 'px'
+  })
+  document.addEventListener('mouseup', () => {
+    if (!dragging) return
+    dragging = false
+    handle.classList.remove('dragging')
+    document.body.style.userSelect = ''
+    document.body.style.cursor = ''
+    publish({ resized: Date.now() })
+  })
+})()
 </script>
 </body>
 </html>
